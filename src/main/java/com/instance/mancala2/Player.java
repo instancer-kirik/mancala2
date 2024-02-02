@@ -27,8 +27,10 @@ public class Player {
         if(hand>0) {
             setSleeveStone(getSleeveStone() + 1);
             hand--;
-            System.out.println("+++++++");
+            System.out.println("++++++ ");
+            System.out.println(getSleeveStone() + " stones");
         }
+
     }
 
 

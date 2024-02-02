@@ -35,10 +35,10 @@ public class MancalaBoard {
         this.pitCount = pitCount;
         MancalaBoard.playerCount = playerCount;
         this.pits = new int[pitCount]; // Initialize pits with 0 stones
-        for(int i=0;i<this.pits.length;i++){
+        for(int i=0;i<this.pits.length-2;i++){//-2 makes so it doesn't prime the mancalas
             this.pits[i]=pitStartQuantity;
         }
-        BOARDLENGTH=(DEFAULT_PIT_COUNT-2)/playerCount;
+        BOARDLENGTH=(DEFAULT_PIT_COUNT-2)/playerCount;// this is just num of pits on one side
         // Implement any additional setup logic (initial stone placement, etc.)
     }
 
@@ -125,11 +125,40 @@ public class MancalaBoard {
       //      nextPitIndex++; // Move to next pit
 
     }
-    public boolean isGameOver() {
-        // Implement logic to check if all pits of one player are empty
-        return false; // Placeholder for your implementation
+    public Boolean isGameOver(int currentPlayer) {
+        if(currentPlayer==0){
+            return isPlayer1NoMove();
+        }else{
+            return isPlayer2NoMove();
+        }
     }
+    public Boolean isPlayer1NoMove(){
+        Boolean flag = true;
+        //checks if one side has no stones in any pits
+        for (int i = 0; i < getPitCount() / 2; i++) {
 
+            if (pits[i] == 0) {
+
+            } else {
+                flag = false;//there is still a valid turn for player 1
+            }
+        }
+        return flag;
+    }
+    public Boolean isPlayer2NoMove(){
+        Boolean flag = true;
+        //checks if one side has no stones in any pits
+        System.out.println("}}}}}}}}}}}}}}}}}}}}}}}}}}"+getPitCount());
+        for (int i = getPitCount() / 2; i < getPitCount(); i++) {
+
+            if (pits[i] == 0) {
+
+            } else {
+                flag = false;//there is still a valid turn for player 2
+            }
+        }
+        return flag;
+    }
     public boolean isPitOnCurrentPlayerSide(int pitIndex, int currentPlayer) {
         // Calculate the range of pits for the current player
         int startPit = currentPlayer * BOARDLENGTH;

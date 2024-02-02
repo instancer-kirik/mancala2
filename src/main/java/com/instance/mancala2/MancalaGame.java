@@ -24,8 +24,8 @@ public class MancalaGame extends GameApplication {
         this.height = height;
     }
 
-    private int width = 600;
-private int height = 700;
+    private int width = 700;
+private int height = 500;
     private Scene scene;
     private final MancalaBoard board; // Existing board class
     MancalaBoardPane mbp;
@@ -59,12 +59,13 @@ private int height = 700;
         mbg.game=this;
 //mbp.getScene().getRoot() would probably return null
         scene = new Scene(mbg, width, height);
-
+//OLD SHIFT IMPL; NO CLICK
         scene.setOnKeyPressed(event -> {
             if (event.isShiftDown()) {
-                System.out.println("SHIFT");
+                System.out.println("SHIFT, no click");
                 // Add a stone to the current player's sleeve
                 players[currentPlayer].storeStone();
+                if(players[currentPlayer].getHand()==0){resetTurnState();}
                 mbg.updateUI(); // Update the UI to reflect the change
             }
         });
@@ -80,7 +81,7 @@ private int height = 700;
         currentPlayer = (currentPlayer + 1) % playerCount;
         resetTurnState();
         // Check if the game is over
-        if (board.isGameOver()) {
+        if (board.isGameOver(currentPlayer)) {
             // Handle the end of the game, such as declaring a winner
             declareWinner();
             // Optionally, reset the game or provide options for a new game
@@ -131,39 +132,6 @@ private int height = 700;
     private void finishTurn() {
         // Switch players, check for game end, update UI
     }
-    public void playTurn(int pitIndex) {
-        System.out.println("PLAYTURN AT "+pitIndex);
-        if (!board.isValidPit(pitIndex)) return; // Ignore invalid clicks
-        players[currentPlayer].addStonesToHand(board.take(pitIndex));
-        // Initial picking of stones-
-        if (board.isPitValidAndBelongsToCurrentPlayer(pitIndex, currentPlayer)) {
-            players[currentPlayer].addStonesToHand(board.take(pitIndex));
-        }
-
-        while (players[currentPlayer].getHand()!=0){
-        //listens for pitClicks to deposit
-            //listens for shift to store
-
-        }
-        System.out.println("EMPTY HAND IN PLAYTURN");
-        // Implement game logic based on Mancala rules
-        //board.sowFromPit(pitIndex, currentPlayer);
-        // ... Check for captures, ending conditions, etc.
-
-        // Update UI based on stone movements and captures
-        // ... Update visual elements of pits based on changed stone counts
-        // ... Use animations or sound effects if desired
-
-        // Switch player and display information
-        currentPlayer = (currentPlayer + 1) % playerCount;
-        board.setCurrentPlayerIndex(currentPlayer);
-        // ... Display updated player information on the scene
-
-        // Check for game end and handle accordingly
-        if (board.isGameOver()) {
-            // ... Display winner or draw message
-        }
-    }
 
     //@Override
     public void stop() {
@@ -173,10 +141,10 @@ private int height = 700;
     @Override
     protected void initSettings(GameSettings gameSettings) {
 
-        for (int i = 0; i < board.getPitCount(); i++) {
-            final int pitIndex = i; // Capture i in a final variable
-            pitNodes[i].setOnMouseClicked(event -> playTurn(pitIndex));
-        }
+//        for (int i = 0; i < board.getPitCount(); i++) {
+//            final int pitIndex = i; // Capture i in a final variable
+//            pitNodes[i].setOnMouseClicked(event -> playTurn(pitIndex));
+//        }
         // Set game title and icon
 //        setTitle();
 //        setIcon("mancala_icon.png"); // Replace with your icon
@@ -211,6 +179,10 @@ private int height = 700;
 
     public void resetTurnState() {
         turnState = TurnState.PICKING;
+        if (board.isGameOver(currentPlayer)) {
+            // Handle the end of the game, such as declaring a winner
+            declareWinner();
+        }
     }
 
     // ... Additional methods for menu options, settings, etc.
