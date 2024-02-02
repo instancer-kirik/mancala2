@@ -21,15 +21,6 @@ public class MancalaBoard {
         this.players = players;
     }
 
-    public int getCurrentPlayerIndex() {
-        return currentPlayerIndex;
-    }
-
-    public void setCurrentPlayerIndex(int currentPlayerIndex) {
-        this.currentPlayerIndex = currentPlayerIndex;
-    }
-
-    private int currentPlayerIndex; // Index of the current player
 
     public MancalaBoard(int pitCount, int playerCount,Player[] players) {
         this.pitCount = pitCount;
@@ -62,31 +53,31 @@ public class MancalaBoard {
         if (pits[pitIndex]==0) return false;
         return pitIndex != MANCALA1 && pitIndex != MANCALA2; // Excluding mancala pits
     }
-
-    public void sowFromPit(int pitIndex, int player) {
-        if (!isValidPit(pitIndex)) return;
-
-        int stones = pits[pitIndex]; // Save stones for later update
-        pits[pitIndex] = 0; // Empty the clicked pit
-
-        int nextPitIndex = (pitIndex + 1) % pits.length;
-        while (stones > 0) {
-            if (nextPitIndex == pitIndex || nextPitIndex == MANCALA1 || nextPitIndex == MANCALA2) { // Skip opponent's mancala and clicked pit
-                nextPitIndex++;
-                continue;
-            }
-
-            pits[nextPitIndex]++; // Sow one stone
-            stones--;
-
-            if (stones == 1 && nextPitIndex == player * 6) { // Capture rule
-                pits[MANCALA1 + player]++; // Capture stone in own mancala
-                stones = 0; // Stop sowing after capturing
-            }
-
-            nextPitIndex++; // Move to next pit
-        }
-    }
+//this is the automated one, maybe use later
+//    public void sowFromPit(int pitIndex, int player) {
+//        if (!isValidPit(pitIndex)) return;
+//
+//        int stones = pits[pitIndex]; // Save stones for later update
+//        pits[pitIndex] = 0; // Empty the clicked pit
+//
+//        int nextPitIndex = (pitIndex + 1) % pits.length;
+//        while (stones > 0) {
+//            if (nextPitIndex == pitIndex || nextPitIndex == MANCALA1 || nextPitIndex == MANCALA2) { // Skip opponent's mancala and clicked pit
+//                nextPitIndex++;
+//                continue;
+//            }
+//
+//            pits[nextPitIndex]++; // Sow one stone
+//            stones--;
+//
+//            if (stones == 1 && nextPitIndex == player * 6) { // Capture rule
+//                pits[MANCALA1 + player]++; // Capture stone in own mancala
+//                stones = 0; // Stop sowing after capturing
+//            }
+//
+//            nextPitIndex++; // Move to next pit
+//        }
+//    }
 
     public boolean placeStone(int pitIndex, int currentPlayer){
 
@@ -104,25 +95,7 @@ public class MancalaBoard {
         int stones = pits[pitIndex]; // Save stones for later update
         pits[pitIndex] = 0; // Empty the clicked pit
         return stones;
-        //players[currentPlayerIndex].addStonesToHand(stones);
-//moved to playturn
-        //playerhand
-        //int nextPitIndex = (pitIndex + 1) % pits.length;
-//        while (stones > 0) {
-//            if (nextPitIndex == pitIndex || nextPitIndex == MANCALA1 || nextPitIndex == MANCALA2) { // Skip opponent's mancala and clicked pit
-//                nextPitIndex++;
-//                continue;
-//            }
-//moving to turn
-//            pits[nextPitIndex]++; // Sow one stone
-//            stones--;
 
-//            if (stones == 1 && nextPitIndex == player * 6) { // Capture rule
-//                pits[MANCALA1 + player]++; // Capture stone in own mancala
-//                stones = 0; // Stop sowing after capturing
-//            }
-
-      //      nextPitIndex++; // Move to next pit
 
     }
     public Boolean isGameOver(int currentPlayer) {
@@ -223,6 +196,11 @@ public class MancalaBoard {
         for (int i = 0; i < capturedStones; i++) {
             placeStone(mancalaIndex, currentPlayer);
         }
+    }
+    public int whoHasMorePoints(){
+        if(pits[MANCALA1]==pits[MANCALA2]) return -1; //tie
+        else if(pits[MANCALA1]>pits[MANCALA2]) return 0;//player 1 wins
+        else{ return 1;} //player 2 wins
     }
 
 }

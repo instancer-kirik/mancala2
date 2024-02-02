@@ -38,8 +38,6 @@ public class MancalaBoardGroup extends Group {
     double mancalaWidth = 100; // Example width, adjust as needed
     double mancalaHeight = 250; // Example height, adjust as needed
     double cornerRadius = 100; // Corner radius for rounded edges
-
-    // New members to track the visual indicators for current player
     private Group currentPlayerIndicatorP1;
     private Group currentPlayerIndicatorP2;
     private Text handEmptyIndicator;
@@ -48,23 +46,12 @@ public class MancalaBoardGroup extends Group {
         this.board = board;
         this.game = game;
         this.mancalas = new Node[game.players.length];
-        // Create a background rectangle
-//        Rectangle background = new Rectangle();
-//        background.setWidth(700); // Set to your desired width
-//        background.setHeight(600); // Set to your desired height
-//        background.setFill(Color.DARKRED); // Set to your desired background color
         Image woodImage = new Image(getClass().getResourceAsStream("/images/wood_texture.jpg"));
         ImageView woodImageView = new ImageView(woodImage);
 
         woodImageView.setFitWidth(700); // Adjust to your desired width
         woodImageView.setFitHeight(600); // Adjust to your desired height
         getChildren().add(woodImageView);
-        // Add the background to the group
-        //getChildren().add(background);
-// Initialize and add the current player indicators
-//        currentPlayerIndicatorP1 = createCurrentPlayerIndicator(1);
-//        currentPlayerIndicatorP2 = createCurrentPlayerIndicator(2);
-
 
         // Create and position Mancalas
         //Group mancala1 =  // Assuming index 0 for Player 1's Mancala
@@ -82,7 +69,6 @@ public class MancalaBoardGroup extends Group {
             pitNodes[i] = createPitNode(i);
             getChildren().add(pitNodes[i]);
         }
-
 
         // Create and position stone count labels
         stoneCountLabels = new Text[pitNodesCt];
@@ -145,16 +131,6 @@ public class MancalaBoardGroup extends Group {
         );
         // Set the color of the pit
         pit.setFill(gradient);
-
-        // Set the position of the pit (you'll need to calculate this based on the pitIndex)
-        //double xPosition = calculateXPosition(pitIndex);
-        //double yPosition = calculateYPosition(pitIndex);
-        //pitGroup.SetLayoutX(xPosition);
-
-        // Create the pit Circle with a transparent fill
-       // Circle pit = new Circle();
-       // pit.setRadius(pitRadius);
-      //  pit.setFill(Color.TRANSPARENT); // Keep the fill transparent
 
 //        // Add a more pronounced InnerShadow effect
         InnerShadow innerShadow = new InnerShadow();
@@ -229,13 +205,10 @@ public class MancalaBoardGroup extends Group {
 
         pitGroup.setOnMouseDragged(event -> {
             // Calculate the drag distance
-
             // Set a threshold for the drag distance to consider it an intentional drag
-
                 pitGroup.setUserData(Boolean.TRUE); // Mark as a drag
 
         });
-
         pitGroup.setOnMouseReleased(event -> {
             double dragDistance = Math.sqrt(Math.pow(event.getSceneX() - startPosition[0], 2) + Math.pow(event.getSceneY() - startPosition[1], 2));
             if (dragDistance > 21) { // Threshold value can be adjusted
@@ -268,153 +241,6 @@ public class MancalaBoardGroup extends Group {
         return pitIndex < BOARDLENGTH ? 200 : 300; // Two rows of pits as an example
     }
 
-    // Method to create stone count label (implement as needed)
-
-    private Text createStoneCountLabel(int pitIndex) {
-        Text label = new Text("V "+pitIndex);
-        // Set label properties (font, color, alignment)
-        label.setFont(Font.font(20));
-        label.setFill(Color.BLACK);
-        label.setTextAlignment(TextAlignment.CENTER);
-
-        // Position the label relative to the corresponding pit node
-        // ... Adapt this based on your actual pit node implementation
-        label.setLayoutX(pitNodes[pitIndex].getLayoutX() + pitNodes[pitIndex].getBoundsInLocal().getWidth() / 2);
-        label.setLayoutY(pitNodes[pitIndex].getLayoutY() + pitNodes[pitIndex].getBoundsInLocal().getHeight() / 2);
-
-        return label;
-    }
-    // Method to update stone counts (implement as needed)
-
-    public Node[] getPitNodes() {
-        return pitNodes;
-    }
-    public void updateStoneCounts() {
-        for (int i = 0; i < stoneCountLabels.length; i++) {
-            stoneCountLabels[i].setText(String.valueOf(i)+" "+String.valueOf(board.getStones(i)));
-        }
-    }
-
-    public void updateUI() {
-
-        // Update small pits
-        for (int i = 0; i < board.getPitCount(); i++) {
-            updatePitUI(i);
-        }
-
-        // Update Mancalas
-        updateMancalaUI(0);
-        updateMancalaUI(1);
-
-        // Update stone counts and current player indicator
-        updateStoneCounts();
-        updateCurrentPlayerIndicator();
-        updateHandEmptyIndicator();
-    }
-
-
-
-
-
-
-    public void updatePitUI(int i) {
-//updates small pits
-
-            Group pitGroup = (Group) pitNodes[i];
-            pitGroup.getChildren().clear(); // Clear the existing children (stones)
-
-            // Re-create the pit itself
-
-            Circle pit = new Circle();
-            pit.setRadius(pitRadius);
-
-            pit.setStroke(Color.BLACK);
-        RadialGradient gradient = new RadialGradient(
-                0, 0.0, // Focus angle and focus distance
-                0.5, 0.5, // Center X and Y of the circle
-                1, // Radius of the circle
-                true, // Proportional to the circle size
-                CycleMethod.NO_CYCLE, // No cycle method
-                new Stop(0, Color.TRANSPARENT), // Transparent at the edges
-                new Stop(1, Color.rgb(0, 0, 0, 0.2)) // Gradient stops, dark color at the center
-
-        );
-        // Set the color of the pit
-        pit.setFill(gradient);
-//        // Add a more pronounced InnerShadow effect
-        InnerShadow innerShadow = new InnerShadow();
-        innerShadow.setRadius(pitRadius / 2); // Increase the radius for a larger shadow
-        innerShadow.setColor(Color.color(0.0, 0.0, 0.0,0.8)); // Fully opaque black for stronger shadow
-        innerShadow.setOffsetX(0); // Center the shadow
-        innerShadow.setOffsetY(0); // Center the shadow
-
-        pit.setEffect(innerShadow);
-
-            pitGroup.getChildren().add(pit);
-
-            // Get the updated number of stones in this pit
-            int stones = board.getStones(i);
-
-            // Re-create and position stones within the pit
-            for (int j = 0; j < stones; j++) {
-                Circle stone = new Circle();
-                stone.setRadius(5); // Small radius for stones
-                stone.setFill(Color.BLACK); // Stone color
-
-                // Calculate the position for each stone
-                double angle = 2 * Math.PI / stones * j;
-                double stoneX = Math.cos(angle) * 20; // 20 is the distance from the center of the pit
-                double stoneY = Math.sin(angle) * 20;
-
-                stone.setCenterX(stoneX);
-                stone.setCenterY(stoneY);
-
-                pitGroup.getChildren().add(stone);
-            }
-            //createPitNode(i);
-
- //      createMancala(int index);
-//        //handle mancalas ui
-
-    }
-      //  updateStoneCounts();
-      private Node updateMancalaUI(int mancalaIndex) {
-          Group mancalaGroup = (Group) mancalas[mancalaIndex];
-          Rectangle mancalaRectangle = (Rectangle) mancalaGroup.getChildren().get(0); // Now treating it as a Rectangle
-
-          // Clear existing stones
-          if (mancalaGroup.getChildren().size() > 1) {
-              mancalaGroup.getChildren().remove(1, mancalaGroup.getChildren().size());
-          }
-
-          int stones = board.getStones(mancalaIndex == 0 ? MANCALA1 : MANCALA2);
-
-          double centerX = mancalaRectangle.getLayoutX() + mancalaWidth / 2;
-          double centerY = mancalaRectangle.getLayoutY() + mancalaHeight / 2;
-
-          // Adjust the way you calculate the position of the stones
-          double mancalaWidth = mancalaRectangle.getWidth();
-          double mancalaHeight = mancalaRectangle.getHeight();
-
-          for (int i = 0; i < stones; i++) {
-              Circle stone = new Circle();
-              stone.setRadius(5); // Small radius for stones
-              stone.setFill(Color.BLACK); // Stone color
-
-
-              // Calculate position for each stone relative to center
-              double angle = 2 * Math.PI / stones * i;
-              double stoneX = centerX + Math.cos(angle) * (mancalaWidth / 4); // Adjust radius as needed
-              double stoneY = centerY + Math.sin(angle) * (mancalaHeight / 4); // Adjust radius as needed
-
-              stone.setLayoutX(stoneX);
-              stone.setLayoutY(stoneY);
-
-              mancalaGroup.getChildren().add(stone);
-          }
-          return mancalaGroup;
-      }
-
     private Group createMancala(int index) {
         Group pitGroup = new Group();
 
@@ -446,29 +272,9 @@ public class MancalaBoardGroup extends Group {
 
         // Get the number of stones in this pit
         int stones = board.getStones(index);
-
-//        // Create and position stones within the pit
-//        for (int i = 0; i < stones; i++) {
-//            Circle stone = new Circle();
-//            stone.setRadius(5); // Small radius for stones
-//            stone.setFill(Color.BLACK); // Stone color
-//
-//            // Calculate the position for each stone
-//            double angle = 2 * Math.PI / stones * i;
-//            double stoneX = mancala.getLayoutX() + Math.cos(angle) * 20; // 20 is the distance from the center of the pit
-//            double stoneY = mancala.getLayoutY() + Math.sin(angle) * 20;
-//
-//            stone.setCenterX(stoneX);
-//            stone.setCenterY(stoneY);
-//
-//            // Add each stone to the group
-//            pitGroup.getChildren().add(stone);
-//        }
-
         // Return the group containing the Mancala and its stones
         return pitGroup;
     }
-
 
     private double calculateMancalaPositionX(int index) {
         // Assuming Mancalas are at the ends of the board
@@ -488,7 +294,39 @@ public class MancalaBoardGroup extends Group {
         return (upperRowY + lowerRowY) / 2 - mancalaHeight / 4;// Assuming 'height' is the height of the board
     }
 // Assuming this is part of a class that has access to 'board', 'game', and 'updateUI'
+    private void handlePlacingPhase(int pitIndex) {
+    int pitStones = board.getStones(pitIndex);
+    System.out.println("DROP phase " + game.players[game.getCurrentPlayer()].getHand() + " STONES");
 
+    if (game.players[game.getCurrentPlayer()].getHand() >= 1) {
+        board.placeStone(pitIndex, game.getCurrentPlayer());
+        game.players[game.getCurrentPlayer()].drop(1);
+
+        if (game.players[game.getCurrentPlayer()].getHand() == 0) {
+//                if (board.isPitPlayerMancala(pitIndex, game.getCurrentPlayer())) {
+//                    // If so, the current player gets another turn
+//                    // (Adjust this logic based on your game's rules)
+//                    // For example, you might not change the current player or reset the turn state
+//                    //game.resetTurnState();
+//                } else {
+            // Otherwise, end the turn and switch to the next player
+            processLastStonePlacement(pitIndex, pitStones);
+            //game.resetTurnState();
+            //game.endTurn();
+            //updateCurrentPlayerIndicator();
+            // game.switchToNextPlayer();
+
+        }
+    }
+}
+
+    private void handleTakingPhase(int pitIndex) {
+        System.out.println("TAKE phase");
+        if (board.isPitValidAndBelongsToCurrentPlayer(pitIndex, game.getCurrentPlayer())) {
+            game.players[game.getCurrentPlayer()].addStonesToHand(board.take(pitIndex));
+            game.initiateStonePlacement();
+        }
+    }
     /**
      * Handles a click event on a pit.
      * @param pitIndex The index of the pit that was clicked.
@@ -579,53 +417,142 @@ public class MancalaBoardGroup extends Group {
         return (pitIndex == MANCALA1 && game.getCurrentPlayer() == 0) ||
                 (pitIndex == MANCALA2 && game.getCurrentPlayer() == 1);
     }
-    private void handlePlacingPhase(int pitIndex) {
-        int pitStones = board.getStones(pitIndex);
-        System.out.println("DROP phase " + game.players[game.getCurrentPlayer()].getHand() + " STONES");
 
-        if (game.players[game.getCurrentPlayer()].getHand() >= 1) {
-            board.placeStone(pitIndex, game.getCurrentPlayer());
-            game.players[game.getCurrentPlayer()].drop(1);
+    private Text createStoneCountLabel(int pitIndex) {
+        Text label = new Text("V "+pitIndex);
+        // Set label properties (font, color, alignment)
+        label.setFont(Font.font(20));
+        label.setFill(Color.BLACK);
+        label.setTextAlignment(TextAlignment.CENTER);
 
-            if (game.players[game.getCurrentPlayer()].getHand() == 0) {
-//                if (board.isPitPlayerMancala(pitIndex, game.getCurrentPlayer())) {
-//                    // If so, the current player gets another turn
-//                    // (Adjust this logic based on your game's rules)
-//                    // For example, you might not change the current player or reset the turn state
-//                    //game.resetTurnState();
-//                } else {
-                    // Otherwise, end the turn and switch to the next player
-                    processLastStonePlacement(pitIndex, pitStones);
-                    //game.resetTurnState();
-                    //game.endTurn();
-                    //updateCurrentPlayerIndicator();
-                   // game.switchToNextPlayer();
+        // Position the label relative to the corresponding pit node
+        // ... Adapt this based on your actual pit node implementation
+        label.setLayoutX(pitNodes[pitIndex].getLayoutX() + pitNodes[pitIndex].getBoundsInLocal().getWidth() / 2);
+        label.setLayoutY(pitNodes[pitIndex].getLayoutY() + pitNodes[pitIndex].getBoundsInLocal().getHeight() / 2);
 
-            }
+        return label;
+    }
+    // Method to update stone counts (implement as needed)
+
+    public void updateStoneCounts() {
+        for (int i = 0; i < stoneCountLabels.length; i++) {
+            stoneCountLabels[i].setText(String.valueOf(i)+" "+String.valueOf(board.getStones(i)));
         }
     }
 
-    private void handleTakingPhase(int pitIndex) {
-        System.out.println("TAKE phase");
-        if (board.isPitValidAndBelongsToCurrentPlayer(pitIndex, game.getCurrentPlayer())) {
-            game.players[game.getCurrentPlayer()].addStonesToHand(board.take(pitIndex));
-            game.initiateStonePlacement();
+    public void updateUI() {
+
+        // Update small pits
+        for (int i = 0; i < board.getPitCount(); i++) {
+            updatePitUI(i);
         }
+
+        // Update Mancalas
+        updateMancalaUI(0);
+        updateMancalaUI(1);
+
+        // Update stone counts and current player indicator
+        updateStoneCounts();
+        updateCurrentPlayerIndicator();
+        updateHandEmptyIndicator();
     }
 
+    //updates small pits
+    public void updatePitUI(int i) {
 
+
+        Group pitGroup = (Group) pitNodes[i];
+        pitGroup.getChildren().clear(); // Clear the existing children (stones)
+
+        // Re-create the pit itself
+
+        Circle pit = new Circle();
+        pit.setRadius(pitRadius);
+
+        pit.setStroke(Color.BLACK);
+        RadialGradient gradient = new RadialGradient(
+                0, 0.0, // Focus angle and focus distance
+                0.5, 0.5, // Center X and Y of the circle
+                1, // Radius of the circle
+                true, // Proportional to the circle size
+                CycleMethod.NO_CYCLE, // No cycle method
+                new Stop(0, Color.TRANSPARENT), // Transparent at the edges
+                new Stop(1, Color.rgb(0, 0, 0, 0.2)) // Gradient stops, dark color at the center
+
+        );
+        // Set the color of the pit
+        pit.setFill(gradient);
+//        // Add a more pronounced InnerShadow effect
+        InnerShadow innerShadow = new InnerShadow();
+        innerShadow.setRadius(pitRadius / 2); // Increase the radius for a larger shadow
+        innerShadow.setColor(Color.color(0.0, 0.0, 0.0,0.8)); // Fully opaque black for stronger shadow
+        innerShadow.setOffsetX(0); // Center the shadow
+        innerShadow.setOffsetY(0); // Center the shadow
+
+        pit.setEffect(innerShadow);
+
+        pitGroup.getChildren().add(pit);
+
+        // Get the updated number of stones in this pit
+        int stones = board.getStones(i);
+
+        // Re-create and position stones within the pit
+        for (int j = 0; j < stones; j++) {
+            Circle stone = new Circle();
+            stone.setRadius(5); // Small radius for stones
+            stone.setFill(Color.BLACK); // Stone color
+
+            // Calculate the position for each stone
+            double angle = 2 * Math.PI / stones * j;
+            double stoneX = Math.cos(angle) * 20; // 20 is the distance from the center of the pit
+            double stoneY = Math.sin(angle) * 20;
+
+            stone.setCenterX(stoneX);
+            stone.setCenterY(stoneY);
+
+            pitGroup.getChildren().add(stone);
+        }
+    }
+    private Node updateMancalaUI(int mancalaIndex) {
+        Group mancalaGroup = (Group) mancalas[mancalaIndex];
+        Rectangle mancalaRectangle = (Rectangle) mancalaGroup.getChildren().get(0); // Now treating it as a Rectangle
+
+        // Clear existing stones
+        if (mancalaGroup.getChildren().size() > 1) {
+            mancalaGroup.getChildren().remove(1, mancalaGroup.getChildren().size());
+        }
+
+        int stones = board.getStones(mancalaIndex == 0 ? MANCALA1 : MANCALA2);
+
+        double centerX = mancalaRectangle.getLayoutX() + mancalaWidth / 2;
+        double centerY = mancalaRectangle.getLayoutY() + mancalaHeight / 2;
+
+        // Adjust the way you calculate the position of the stones
+        double mancalaWidth = mancalaRectangle.getWidth();
+        double mancalaHeight = mancalaRectangle.getHeight();
+
+        for (int i = 0; i < stones; i++) {
+            Circle stone = new Circle();
+            stone.setRadius(5); // Small radius for stones
+            stone.setFill(Color.BLACK); // Stone color
+
+
+            // Calculate position for each stone relative to center
+            double angle = 2 * Math.PI / stones * i;
+            double stoneX = centerX + Math.cos(angle) * (mancalaWidth / 4); // Adjust radius as needed
+            double stoneY = centerY + Math.sin(angle) * (mancalaHeight / 4); // Adjust radius as needed
+
+            stone.setLayoutX(stoneX);
+            stone.setLayoutY(stoneY);
+
+            mancalaGroup.getChildren().add(stone);
+        }
+        return mancalaGroup;
+    }
 
     // Method to create a visual indicator for the current player
     private Group createCurrentPlayerIndicator(int player) {
         Group indicators = new Group();
-      //  Rectangle mindicator = new Rectangle();
-       // Group mancalaGroup = (Group) mancalas[player-1];
-//        if (!mancalaGroup.getChildren().isEmpty() && mancalaGroup.getChildren().get(0) instanceof Rectangle) {
-//            Rectangle mancala = (Rectangle) mancalaGroup.getChildren().get(0);
-//            mancala.setStrokeWidth(5); // Set the stroke width to make it more noticeable
-//            mancala.setStroke(player == 0 ? Color.BLUE : Color.RED); // Different color for each player
-//        }
-
         // Create the mindicator Rectangle
         Rectangle mindicator = new Rectangle(mancalaWidth + 20, mancalaHeight + 20);
         mindicator.setArcWidth(cornerRadius + 10);
@@ -656,19 +583,7 @@ public class MancalaBoardGroup extends Group {
         indicators.getChildren().addAll(indicator,mindicator);
         return indicators;
     }
-//    private void createCurrentPlayerIndicator(int player) {
-//        // Reset all indicators
-//        for (Node mancalaNode : mancalas) {
-//            Group mancalaGroup = (Group) mancalaNode;
-//            Rectangle indicator = (Rectangle) mancalaGroup.getChildren().get(0); // Assuming the first child is the indicator
-//            indicator.setStroke(Color.TRANSPARENT); // Hide the indicator
-//        }
-//
-//        // Highlight the current player's Mancala
-//        Group currentPlayerMancalaGroup = (Group) mancalas[player];
-//        Rectangle currentPlayerIndicator = (Rectangle) currentPlayerMancalaGroup.getChildren().get(0);
-//        currentPlayerIndicator.setStroke(player == 0 ? Color.BLUE : Color.RED); // Set color for the current player
-//    }
+
     // Method to update the visual indicator based on the current player
     public void updateCurrentPlayerIndicator() {
         int currentPlayer = game.getCurrentPlayer();
@@ -730,6 +645,7 @@ public class MancalaBoardGroup extends Group {
 
         return path;
     }
+
     private Group createArrowHeadsGroup(double topY, double bottomY, int numberOfArrows) {
         Group arrowHeadsGroup = new Group();
         double startX = 50; // Start X coordinate

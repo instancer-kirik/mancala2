@@ -25,12 +25,12 @@ public class MancalaGame extends GameApplication {
     }
 
     private int width = 700;
-private int height = 500;
+    private int height = 500;
     private Scene scene;
     private final MancalaBoard board; // Existing board class
     MancalaBoardPane mbp;
     MancalaBoardGroup mbg;
-    Node[] pitNodes;
+
     private final int playerCount=2; // Number of players
 
 
@@ -70,18 +70,17 @@ private int height = 500;
             }
         });
 
-         pitNodes= mbg.getPitNodes();
 
-// Add event listeners for pit clicks
 
     }
 
     public void endTurn() {
+        System.out.println("END TURN LOG GAME");
         // Switch to the next player
-        currentPlayer = (currentPlayer + 1) % playerCount;
-        resetTurnState();
+
         // Check if the game is over
         if (board.isGameOver(currentPlayer)) {
+
             // Handle the end of the game, such as declaring a winner
             declareWinner();
             // Optionally, reset the game or provide options for a new game
@@ -94,34 +93,13 @@ private int height = 500;
         //updateUI();
     }
 
-    private void declareWinner() {
-        // Logic to declare the winner
-        // This could involve calculating scores and displaying the winner
-        System.out.println(players[currentPlayer].getName()+" WON!");
-    }
+
 
     private void prepareForNextPlayer() {
-        // Any logic that needs to be executed before the next player's turn starts
-        // For example, resetting certain game state variables
+        currentPlayer = (currentPlayer + 1) % playerCount;
+        resetTurnState();
     }
-    private void onPitClicked(int pitIndex) {
-        // Placing stones in subsequent pits
-        if (players[currentPlayer].getHand() > 0) {
 
-            players[currentPlayer].drop(1);
-            boolean wasEmpty = board.placeStone(pitIndex, currentPlayer);
-            //is current playerindex needed in this call??
-
-
-            if (players[currentPlayer].getHand() == 0) {
-                if (wasEmpty && board.isPitOnCurrentPlayerSide(pitIndex, currentPlayer)) {
-                    // Handle capturing of stones if last stone lands in an empty pit
-                    captureStones(pitIndex);
-                }
-                finishTurn();
-            }
-        }
-    }
 
     private void captureStones(int pitIndex) {
         System.out.println("MANCALAGAME CAPTURESTONES");
@@ -129,9 +107,7 @@ private int height = 500;
         players[currentPlayer].addScore(capturedStones);
     }
 
-    private void finishTurn() {
-        // Switch players, check for game end, update UI
-    }
+
 
     //@Override
     public void stop() {
@@ -184,7 +160,30 @@ private int height = 500;
             declareWinner();
         }
     }
+    private void declareWinner() {
+        // Logic to declare the winner
+        // This could involve calculating scores and displaying the winner
+        int winner;
+        switch (board.whoHasMorePoints()) {
+            case 1:
+                System.out.println("Player 2 wins!!");
+                players[1].addWin();
+                break;
+            case -1:
+                System.out.println("TIE");
+                break;
 
+            case 0:
+                System.out.println("Player 1 wins!!");
+                players[0].addWin();
+                break;
+            default:
+                System.out.println("DEFAULT IN MANCALAGAMEDECLAREWINNER");
+        }
+
+
+
+    }
     // ... Additional methods for menu options, settings, etc.
 
 }
