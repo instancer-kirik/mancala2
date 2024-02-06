@@ -18,7 +18,7 @@ public class HelloApplication extends Application {
        // stage.setScene(scene);
 
 
-        MancalaGame mancalaGame = new MancalaGame();
+        MancalaGame mancalaGame = new MancalaGame(stage);
 
         // Set the game scene using the MancalaGame's scene
         stage.setScene(mancalaGame.getScene());

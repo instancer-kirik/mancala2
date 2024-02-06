@@ -2,10 +2,12 @@ package com.instance.mancala2;
 
 import com.almasb.fxgl.app.GameApplication;
 import com.almasb.fxgl.app.GameSettings;
+import javafx.application.Platform;
 import javafx.event.EventHandler;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.input.KeyEvent;
+import javafx.stage.Stage;
 
 public class MancalaGame extends GameApplication {
     public int getWidth() {
@@ -23,14 +25,15 @@ public class MancalaGame extends GameApplication {
     public void setHeight(int height) {
         this.height = height;
     }
-
+    public boolean isNewTurn = true;
     private int width = 700;
     private int height = 500;
-    private Scene scene;
+    private final Scene scene;
     private final MancalaBoard board; // Existing board class
-    MancalaBoardPane mbp;
-    MancalaBoardGroup mbg;
 
+    MancalaBoardGroup mbg;
+    GamePreferences preferences;
+    GamePenalties gamePenalties;
     private final int playerCount=2; // Number of players
 
 
@@ -42,12 +45,19 @@ public class MancalaGame extends GameApplication {
         return currentPlayer;
     }
 
+    public Stage getStage() {
+        return stage;
+    }
 
+    private final Stage stage;
 
     private int currentPlayer; // Current player index
 
     public Player[] players;
-    public MancalaGame() {
+    public MancalaGame(Stage stage) {
+        this.stage=stage;
+        preferences  = GamePreferences.getInstance();
+
         players= new Player[playerCount] ;
         for(int i=0;i<players.length;i++){
             players[i]= new Player("name "+i);
@@ -55,8 +65,10 @@ public class MancalaGame extends GameApplication {
 
         board = new MancalaBoard(14, playerCount,players);
         board.setPlayers(players);
+
         mbg= new MancalaBoardGroup(board,this);
         mbg.game=this;
+        gamePenalties = new GamePenalties(board,preferences);
 //mbp.getScene().getRoot() would probably return null
         scene = new Scene(mbg, width, height);
 //OLD SHIFT IMPL; NO CLICK
@@ -77,7 +89,7 @@ public class MancalaGame extends GameApplication {
     public void endTurn() {
         System.out.println("END TURN LOG GAME");
         // Switch to the next player
-
+        isNewTurn = true;
         // Check if the game is over
         if (board.isGameOver(currentPlayer)) {
 
@@ -160,30 +172,44 @@ public class MancalaGame extends GameApplication {
             declareWinner();
         }
     }
-    private void declareWinner() {
-        // Logic to declare the winner
-        // This could involve calculating scores and displaying the winner
-        int winner;
-        switch (board.whoHasMorePoints()) {
-            case 1:
-                System.out.println("Player 2 wins!!");
-                players[1].addWin();
-                break;
-            case -1:
-                System.out.println("TIE");
-                break;
 
-            case 0:
-                System.out.println("Player 1 wins!!");
-                players[0].addWin();
-                break;
-            default:
-                System.out.println("DEFAULT IN MANCALAGAMEDECLAREWINNER");
-        }
+//
+//    private void declareWinner() {
+//        // Logic to declare the winner
+//        // This could involve calculating scores and displaying the winner
+//        int winner;
+//        switch (board.whoHasMorePoints()) {
+//            case 1:
+//                System.out.println("Player 2 wins!!");
+//                players[1].addWin();
+//                break;
+//            case -1:
+//                System.out.println("TIE");
+//                break;
+//
+//            case 0:
+//                System.out.println("Player 1 wins!!");
+//                players[0].addWin();
+//                break;
+//            default:
+//                System.out.println("DEFAULT IN MANCALAGAMEDECLAREWINNER");
+//        }
+//
+//
+//
+//    }
+private void declareWinner() {
+    // Logic to declare the winner...
+    int winner = board.whoHasMorePoints();// Determine the winner...
 
-
-
-    }
+            Platform.runLater(() -> {
+                // Update UI on the JavaFX Application Thread
+                EndGameScreen endGameScreen = new EndGameScreen(stage,preferences);
+                Scene endGameScene = new Scene(endGameScreen.getView(), 800, 600);
+                stage.setScene(endGameScene);
+                stage.show();
+            });
+}
     // ... Additional methods for menu options, settings, etc.
 
 }

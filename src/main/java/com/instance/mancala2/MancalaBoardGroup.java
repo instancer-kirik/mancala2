@@ -1,13 +1,20 @@
 package com.instance.mancala2;
 
 import javafx.geometry.Bounds;
+import javafx.geometry.Pos;
 import javafx.scene.Group;
 import javafx.scene.Node;
+import javafx.scene.Scene;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Button;
+import javafx.scene.control.ButtonType;
 import javafx.scene.effect.DropShadow;
 import javafx.scene.effect.InnerShadow;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseEvent;
+import javafx.scene.layout.StackPane;
+import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.paint.CycleMethod;
 import javafx.scene.paint.RadialGradient;
@@ -16,9 +23,15 @@ import javafx.scene.shape.*;
 import javafx.scene.text.Text;
 import javafx.scene.text.Font;
 import javafx.scene.text.TextAlignment;
+import javafx.stage.Modality;
+import javafx.stage.Stage;
+import javafx.stage.StageStyle;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
 
 import static com.instance.mancala2.MancalaBoard.*;
-import static javafx.beans.binding.Bindings.when;
 
 public class MancalaBoardGroup extends Group {
     MancalaGame game;
@@ -27,6 +40,9 @@ public class MancalaBoardGroup extends Group {
     private final Node[] pitNodes;
     private final Node[] mancalas;
     private final Text[] stoneCountLabels;
+    //I don't need a reference to preferences here
+    // private GamePreferences preferences;
+
     private int pitRadius =35;
     private double pitPadding = 2.2;//2 is touching sincs center pos *2r
     private double largerRadius=45;
@@ -42,9 +58,13 @@ public class MancalaBoardGroup extends Group {
     private Group currentPlayerIndicatorP2;
     private Text handEmptyIndicator;
     private Rectangle handEmptyBackground;
+
+    private List<Button> buttons = new ArrayList<>();
+
     public MancalaBoardGroup(MancalaBoard board,MancalaGame game) {
         this.board = board;
         this.game = game;
+
         this.mancalas = new Node[game.players.length];
         Image woodImage = new Image(getClass().getResourceAsStream("/images/wood_texture.jpg"));
         ImageView woodImageView = new ImageView(woodImage);
@@ -100,13 +120,121 @@ public class MancalaBoardGroup extends Group {
 
         getChildren().add(handEmptyBackground);
         getChildren().add(handEmptyIndicator);
+        Button reportCheatingButton = new Button(game.preferences.getCheatPhrase().toString());
+        reportCheatingButton.setLayoutX(26); // Adjust based on your layout
+        reportCheatingButton.setLayoutY(450); // Adjust based on your layout
 
+        reportCheatingButton.setOnAction(event ->
+                // Accuse player 1, window faces player 1
+                showReportConfirmation(game.getStage(),
+                        () -> game.gamePenalties.applyPenalty(0, this), // Action for "Yes"
+                        () -> {}, // Action for "No"
+                        180 // Window faces player 1
+                )
+        );
+        reportCheatingButton.setDisable(true);
+        reportCheatingButton.setStyle("-fx-opacity: 0.5; -fx-background-color: #cccccc;"); // Greyed out
+
+        Button reportCheatingButton2 = new Button(game.preferences.getCheatPhrase().toString());
+        reportCheatingButton2.setLayoutX(610); // Adjust based on your layout
+        reportCheatingButton2.setLayoutY(50); // Adjust based on your layout
+        reportCheatingButton2.setRotate(180);
+        reportCheatingButton2.setOnAction(event -> showReportConfirmation(game.getStage(),
+                () -> game.gamePenalties.applyPenalty(1, this), // Action for "Yes"
+                () -> {}, // Action for "No"
+                0 // Window faces player 2, adjust angle as needed
+        ));
+
+        // Assuming you have a method to add UI components
+        buttons.add(reportCheatingButton);
+        buttons.add(reportCheatingButton2);
+        this.getChildren().addAll(reportCheatingButton,reportCheatingButton2);
         // Update stone counts based on initial board state
         updateStoneCounts();
         updateCurrentPlayerIndicator();
         updateUI();
     }
 
+    public Node getNodeForPit(int pitIndex) {
+        if (pitIndex >= 0 && pitIndex < pitNodes.length) {
+            return pitNodes[pitIndex];
+        } else if(pitIndex == MANCALA1 ) {
+        return mancalas[0];
+        }
+        else if (pitIndex == MANCALA2){
+            return mancalas[1];
+
+
+
+
+        }else {
+            throw new IllegalArgumentException("Invalid pit index: " + pitIndex);
+        }
+    }
+    public void showReportConfirmation(Stage owner, Runnable onYes, Runnable onNo, double rotationAngle) {
+        final Stage dialog = new Stage();
+        dialog.initModality(Modality.APPLICATION_MODAL);
+        dialog.initOwner(owner);
+        dialog.initStyle(StageStyle.UNDECORATED);
+
+        Text question = new Text("Did you cheat?");
+        Button yesButton = new Button("Yes");
+        yesButton.setOnAction(e -> {
+            onYes.run();
+            dialog.close();
+        });
+
+        Button noButton = new Button("No");
+        noButton.setOnAction(e -> {
+            onNo.run();
+            dialog.close();
+        });
+
+        VBox dialogVBox = new VBox(10, question, yesButton, noButton);
+        dialogVBox.setAlignment(Pos.CENTER);
+        dialogVBox.setRotate(rotationAngle); // Rotate based on the accused player
+
+        StackPane dialogPane = new StackPane(dialogVBox);
+        dialogPane.setPrefSize(200, 120); // Adjust size as needed
+
+        Scene dialogScene = new Scene(dialogPane);
+        dialog.setScene(dialogScene);
+        dialog.showAndWait();
+    }
+
+//    public void showReportConfirmation(Stage owner) {
+//        final Stage dialog = new Stage();
+//        dialog.initModality(Modality.APPLICATION_MODAL);
+//        dialog.initOwner(owner);
+//        dialog.initStyle(StageStyle.UNDECORATED);
+//
+//        Text question = new Text("Did you cheat?");
+//        Button yesButton = new Button("Yes");
+//        yesButton.setOnAction(e -> {
+//            reportCheating();
+//            dialog.close();
+//        });
+//
+//        Button noButton = new Button("No");
+//        noButton.setOnAction(e -> dialog.close());
+//
+//        VBox dialogVBox = new VBox(10, question, yesButton, noButton);
+//        dialogVBox.setAlignment(Pos.CENTER);
+//        dialogVBox.setRotate(180); // Rotate to face player 1
+//
+//        StackPane dialogPane = new StackPane(dialogVBox);
+//        dialogPane.setPrefSize(200, 120); // Adjust size as needed
+//
+//        Scene dialogScene = new Scene(dialogPane);
+//        dialog.setScene(dialogScene);
+//        dialog.showAndWait();
+//    }
+    private void reportCheating() {
+        // Logic to handle the cheating report
+        System.out.println("Cheating Penalized.");
+        game.gamePenalties.applyPenalty(game.getCurrentPlayer(), this);
+        // Placeholder for additional actions, e.g., notify server, log event, etc.
+    }
     // Method to create pit node (implement as needed)
     private Node createPitNode(int pitIndex) {
         System.out.print("-");
@@ -348,6 +476,11 @@ public class MancalaBoardGroup extends Group {
         } else {
             System.out.println("TAKE phase");
             if (board.isPitValidAndBelongsToCurrentPlayer(pitIndex, game.getCurrentPlayer())) {
+                if (game.isNewTurn) {//this is to swap the cheating buttons to set the report window
+                    toggleButtonStates(); // Adjust this to target specific buttons or actions as needed
+                    game.isNewTurn = false; // Reset the flag since we've handled the new turn's start
+                }
+
                 game.players[game.getCurrentPlayer()].addStonesToHand(board.take(pitIndex));
                 game.initiateStonePlacement();
             }
@@ -713,5 +846,25 @@ public class MancalaBoardGroup extends Group {
         // Example: Check if it's the player's turn and the game phase allows it
         return game.isPlacingPhase() && board.isValidPit(pitIndex);
     }
+
+
+    public void toggleButtonStates() {
+        for (Button button : buttons) {
+            // Toggle the disabled state
+            button.setDisable(!button.isDisabled());
+
+            // Update styles based on the new disabled state
+            if (button.isDisabled()) {
+                // Apply disabled style
+                button.setStyle("-fx-opacity: 0.5; -fx-background-color: #cccccc;"); // Greyed out
+            } else {
+                // Apply enabled style
+                button.setStyle("-fx-opacity: 1; -fx-background-color: #f0f0f0;"); // Default or enabled color
+                // You may want to adjust the background color to match your enabled button's appearance
+            }
+        }
+    }
+
+
 }
 
