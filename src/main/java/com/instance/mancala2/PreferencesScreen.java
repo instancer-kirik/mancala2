@@ -4,10 +4,7 @@ import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.control.Button;
-import javafx.scene.control.ComboBox;
-import javafx.scene.control.Label;
-import javafx.scene.control.TextField;
+import javafx.scene.control.*;
 import javafx.scene.layout.GridPane;
 import javafx.stage.Stage;
 
@@ -50,22 +47,44 @@ public class PreferencesScreen {
         layout.add(penaltyStrategyLabel, 0, 2);
         layout.add(penaltyStrategyComboBox, 1, 2);
 
+        // Continue After Empty Hand
+        Label continueAfterEmptyHandLabel = new Label("Continue After Empty Hand (AutoPickup):");
+        CheckBox continueAfterEmptyHandCheckBox = new CheckBox();
+        continueAfterEmptyHandCheckBox.setSelected(preferences.isContinueAfterEmptyHand_AutoPickup());
+        layout.add(continueAfterEmptyHandLabel, 0, 3); // Adjust row index as needed
+        layout.add(continueAfterEmptyHandCheckBox, 1, 3); // Adjust row index as needed
+// Steal Opposite Stones
+        Label stealOppositeLabel = new Label("Steal Opposite Stones:");
+        CheckBox stealOppositeCheckBox = new CheckBox();
+        stealOppositeCheckBox.setSelected(preferences.isStealOpposite());
+        layout.add(stealOppositeLabel, 0, 4); // Adjust row index as needed
+        layout.add(stealOppositeCheckBox, 1, 4); // Adjust row index as needed
+
+// Capture Placed Stone Also
+        Label capturePlacedAlsoLabel = new Label("Also Capture Placed Stone:");
+        CheckBox capturePlacedAlsoCheckBox = new CheckBox();
+        capturePlacedAlsoCheckBox.setSelected(preferences.isCapturePlacedAlso());
+        layout.add(capturePlacedAlsoLabel, 0, 5); // Adjust row index as needed
+        layout.add(capturePlacedAlsoCheckBox, 1, 5); // Adjust row index as needed
         // Save Button
         Button saveButton = new Button("Save");
         saveButton.setOnAction(e -> {
             preferences.setCheatPhrase(cheatPhraseComboBox.getValue());
             preferences.setPenaltyAmount(penaltyAmountComboBox.getValue());
             preferences.setPenaltyStrategy(penaltyStrategyComboBox.getValue());
+            preferences.setContinueAfterEmptyHand_AutoPickup(continueAfterEmptyHandCheckBox.isSelected());
+            preferences.setStealOpposite(stealOppositeCheckBox.isSelected());
+            preferences.setCapturePlacedAlso(capturePlacedAlsoCheckBox.isSelected());
             MainMenu.navigateToMainMenu(stage);
         });
-        layout.add(saveButton, 1, 3);
+        layout.add(saveButton, 2, 5);
 
         return layout;
     }
     // Define the Runnable for navigating to the main menu
 
     public void show() {
-        Scene scene = new Scene(getView(), 400, 200);
+        Scene scene = new Scene(getView(), 530, 200);
         stage.setScene(scene);
         stage.show();
     }

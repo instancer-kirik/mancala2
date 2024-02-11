@@ -9,21 +9,21 @@ public class GamePenalties {
         this.preferences = preferences;
     }
 
-    public void applyPenalty( int currentPlayer, MancalaBoardGroup mbg) {
+    public void applyPenalty( int blightedPlayer, MancalaBoardGroup mbg) {
         PenaltyStrategy strategy = preferences.getPenaltyStrategy();
         PenaltyAmount amount = preferences.getPenaltyAmount();
         switch (strategy) {
             case DEDUCT:
-                applyFractionalPenalty(currentPlayer, amount, mbg);
+                applyFractionalPenalty(blightedPlayer, amount, mbg);
                 break;
             case DISTRIBUTE_SINGLE_RANDOM:
-                moveScoreToARandomPit(currentPlayer, amount, mbg);
+                moveScoreToARandomPit(blightedPlayer, amount, mbg);
                 break;
             case DISTRIBUTE_MANY_RANDOM:
-                moveScoreToRandomPits(currentPlayer,amount, mbg);
+                moveScoreToRandomPits(blightedPlayer,amount, mbg);
                 break;
             case DISTRIBUTE_ALL_CONSECUTIVE:
-                distributeScoreConsecutively(currentPlayer, amount, mbg);
+                distributeScoreConsecutively(blightedPlayer, amount, mbg);
                 break;
             case MOVE_TO_SELECT:
                 System.out.println("TODO");
@@ -32,18 +32,18 @@ public class GamePenalties {
         }
     }
 
-    private void applyFractionalPenalty(int currentPlayer, PenaltyAmount amount, MancalaBoardGroup mbg) {
-        board.penaltyScoreReduced(currentPlayer,amount.getFraction(), mbg);
+    private void applyFractionalPenalty(int blightedPlayer, PenaltyAmount amount, MancalaBoardGroup mbg) {
+        board.penaltyScoreReduced(blightedPlayer,amount.getFraction(), mbg);
     }
 
-    private void moveScoreToARandomPit(int currentPlayer, PenaltyAmount amount, MancalaBoardGroup mbg) {
-       board.penaltyFractionScoreToARandomPit(currentPlayer,amount.getFraction(), mbg);
+    private void moveScoreToARandomPit(int blightedPlayer, PenaltyAmount amount, MancalaBoardGroup mbg) {
+       board.penaltyFractionScoreToARandomPit(blightedPlayer,amount.getFraction(), mbg);
     }
-    private void moveScoreToRandomPits(int currentPlayer, PenaltyAmount amount, MancalaBoardGroup mbg) {
-        board.penaltyFractionScoreToRandomPits(currentPlayer,amount.getFraction(), mbg);
+    private void moveScoreToRandomPits(int blightedPlayer, PenaltyAmount amount, MancalaBoardGroup mbg) {
+        board.penaltyFractionScoreToRandomPits(blightedPlayer,amount.getFraction(), mbg);
     }
-    private void distributeScoreConsecutively(int currentPlayer, PenaltyAmount amount, MancalaBoardGroup mbg) {
-        board.penaltyFractionAddToAllPitsConsecutively(currentPlayer,amount.getFraction(), mbg);
+    private void distributeScoreConsecutively(int blightedPlayer, PenaltyAmount amount, MancalaBoardGroup mbg) {
+        board.penaltyFractionAddToAllPitsConsecutively(blightedPlayer,amount.getFraction(), mbg);
     }
 
     // Additional methods for specific penalty actions

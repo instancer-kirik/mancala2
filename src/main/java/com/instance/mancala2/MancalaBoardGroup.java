@@ -1,18 +1,21 @@
 package com.instance.mancala2;
 
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.geometry.Bounds;
+import javafx.geometry.Insets;
+import javafx.geometry.Point2D;
 import javafx.geometry.Pos;
 import javafx.scene.Group;
 import javafx.scene.Node;
 import javafx.scene.Scene;
-import javafx.scene.control.Alert;
-import javafx.scene.control.Button;
-import javafx.scene.control.ButtonType;
+import javafx.scene.control.*;
 import javafx.scene.effect.DropShadow;
 import javafx.scene.effect.InnerShadow;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseEvent;
+import javafx.scene.layout.Pane;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
@@ -28,8 +31,9 @@ import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
-import java.util.Random;
+import java.util.Optional;
 
 import static com.instance.mancala2.MancalaBoard.*;
 
@@ -43,11 +47,11 @@ public class MancalaBoardGroup extends Group {
     //I don't need a reference to preferences here
     // private GamePreferences preferences;
 
-    private int pitRadius =35;
+    private int pitRadius = 35;
     private double pitPadding = 2.2;//2 is touching sincs center pos *2r
-    private double largerRadius=45;
-    private double BOARDX=600;
-    private double BOARDY=400;
+    private double largerRadius = 45;
+    private double BOARDX = 600;
+    private double BOARDY = 400;
     private final double leftMargin = 60; // Example value, adjust as needed
     private final double rightMargin = 10; // Example value, adjust as needed
     // Define dimensions for the Mancala
@@ -58,10 +62,16 @@ public class MancalaBoardGroup extends Group {
     private Group currentPlayerIndicatorP2;
     private Text handEmptyIndicator;
     private Rectangle handEmptyBackground;
-
+    private Button logButton;
     private List<Button> buttons = new ArrayList<>();
+    private Point2D prevPoint;
+    private Point2D startPoint;
+    private final double startingRadius = 30;
+    private final double directionChangeTolerance = 0.5; // Tolerance for detecting direction change (smaller is more sensitive)
 
-    public MancalaBoardGroup(MancalaBoard board,MancalaGame game) {
+    //private ObservableList<Circle> directionChangePoints = FXCollections.observableArrayList();
+    private GestureHandler gestureHandler;
+    public MancalaBoardGroup(MancalaBoard board, MancalaGame game) {
         this.board = board;
         this.game = game;
 
@@ -75,7 +85,7 @@ public class MancalaBoardGroup extends Group {
 
         // Create and position Mancalas
         //Group mancala1 =  // Assuming index 0 for Player 1's Mancala
-        mancalas[0] =createMancala(MANCALA1);
+        mancalas[0] = createMancala(MANCALA1);
         mancalas[1] = createMancala(MANCALA2); // Assuming last index for Player 2's Mancala
         currentPlayerIndicatorP1 = createCurrentPlayerIndicator(1);
         currentPlayerIndicatorP2 = createCurrentPlayerIndicator(2);
@@ -83,7 +93,7 @@ public class MancalaBoardGroup extends Group {
 
         getChildren().addAll(mancalas[0], mancalas[1]);
         // Create and position pit nodes
-        int pitNodesCt=board.getPitCount();
+        int pitNodesCt = board.getPitCount();
         pitNodes = new Node[pitNodesCt];
         for (int i = 0; i < pitNodes.length; i++) {
             pitNodes[i] = createPitNode(i);
@@ -124,13 +134,22 @@ public class MancalaBoardGroup extends Group {
         reportCheatingButton.setLayoutX(26); // Adjust based on your layout
         reportCheatingButton.setLayoutY(450); // Adjust based on your layout
 
-        reportCheatingButton.setOnAction(event ->
-                // Accuse player 1, window faces player 1
-                showReportConfirmation(game.getStage(),
-                        () -> game.gamePenalties.applyPenalty(0, this), // Action for "Yes"
-                        () -> {}, // Action for "No"
-                        180 // Window faces player 1
-                )
+        reportCheatingButton.setOnAction(event -> {
+                    // Accuse player 1, window faces player 1
+                    game.addMove(ActionType.ACCUSE, -1, 1);
+                    game.addMove(ActionType.GET_ACCUSED, -1, 0);
+                    showReportConfirmation(game.getStage(),
+                            () -> {
+                                game.gamePenalties.applyPenalty(0, this);
+                                game.addMove(ActionType.PENALIZED, -1, 0);
+                            }, // Action for "Yes"
+                            () -> {
+
+                                showLastTurn();
+                            }, // Action for "No"
+                            180 // Window faces player 1
+                    );
+                }
         );
         reportCheatingButton.setDisable(true);
         reportCheatingButton.setStyle("-fx-opacity: 0.5; -fx-background-color: #cccccc;"); // Greyed out
@@ -139,16 +158,45 @@ public class MancalaBoardGroup extends Group {
         reportCheatingButton2.setLayoutX(610); // Adjust based on your layout
         reportCheatingButton2.setLayoutY(50); // Adjust based on your layout
         reportCheatingButton2.setRotate(180);
-        reportCheatingButton2.setOnAction(event -> showReportConfirmation(game.getStage(),
-                () -> game.gamePenalties.applyPenalty(1, this), // Action for "Yes"
-                () -> {}, // Action for "No"
-                0 // Window faces player 2, adjust angle as needed
-        ));
+        reportCheatingButton2.setOnAction(event -> {
+            game.addMove(ActionType.ACCUSE, -1, 0);
+            game.addMove(ActionType.GET_ACCUSED, -1, 1);
+            showReportConfirmation(game.getStage(),
+                    () -> {
+                        game.gamePenalties.applyPenalty(1, this);
+                        game.addMove(ActionType.PENALIZED, -1, 1);
+                    }, // Action for "Yes"
+                    () -> {
+                        showLastTurn();
+                    }, // Action for "No"
+                    0 // Window faces player 2, adjust angle as needed
+            );
+        });
 
         // Assuming you have a method to add UI components
         buttons.add(reportCheatingButton);
         buttons.add(reportCheatingButton2);
-        this.getChildren().addAll(reportCheatingButton,reportCheatingButton2);
+        this.getChildren().addAll(reportCheatingButton, reportCheatingButton2);
+
+        createLogButton();
+        // Example positions
+        double posX = 300;
+        double posY = 200;
+        //setupGestureTracking();
+        // Create and add a circle with compound drag gesture detection at the specified position
+//        getChildren().add(createInteractiveCircle(posX, posY, 25));
+        // Listen to the list and add new circles to the pane whenever a direction change is detected
+//        directionChangePoints.addListener((javafx.collections.ListChangeListener.Change<? extends Circle> c) -> {
+//            while (c.next()) {
+//                if (c.wasAdded()) {
+//                    getChildren().addAll(c.getAddedSubList());
+//                }
+//            }
+//        });
+
+
+
+
         // Update stone counts based on initial board state
         updateStoneCounts();
         updateCurrentPlayerIndicator();
@@ -158,19 +206,17 @@ public class MancalaBoardGroup extends Group {
     public Node getNodeForPit(int pitIndex) {
         if (pitIndex >= 0 && pitIndex < pitNodes.length) {
             return pitNodes[pitIndex];
-        } else if(pitIndex == MANCALA1 ) {
-        return mancalas[0];
-        }
-        else if (pitIndex == MANCALA2){
+        } else if (pitIndex == MANCALA1) {
+            return mancalas[0];
+        } else if (pitIndex == MANCALA2) {
             return mancalas[1];
 
 
-
-
-        }else {
+        } else {
             throw new IllegalArgumentException("Invalid pit index: " + pitIndex);
         }
     }
+
     public void showReportConfirmation(Stage owner, Runnable onYes, Runnable onNo, double rotationAngle) {
         final Stage dialog = new Stage();
         dialog.initModality(Modality.APPLICATION_MODAL);
@@ -178,24 +224,52 @@ public class MancalaBoardGroup extends Group {
         dialog.initStyle(StageStyle.UNDECORATED);
 
         Text question = new Text("Did you cheat?");
+        question.setFill(Color.WHITE); // White text for better contrast with a dark background
+
         Button yesButton = new Button("Yes");
+        yesButton.setStyle("-fx-background-color: darkred; -fx-text-fill: white;"); // Dark red with white text
+
         yesButton.setOnAction(e -> {
-            onYes.run();
+
             dialog.close();
+            onYes.run();
         });
 
         Button noButton = new Button("No");
+        noButton.setStyle("-fx-background-color: darkred; -fx-text-fill: white;"); // Consistent styling
+
         noButton.setOnAction(e -> {
-            onNo.run();
+
             dialog.close();
+            onNo.run();
         });
 
-        VBox dialogVBox = new VBox(10, question, yesButton, noButton);
-        dialogVBox.setAlignment(Pos.CENTER);
-        dialogVBox.setRotate(rotationAngle); // Rotate based on the accused player
+//        VBox dialogVBox = new VBox(10, question, yesButton, noButton);
+//        dialogVBox.setAlignment(Pos.CENTER);
+//        dialogVBox.setRotate(rotationAngle); // Rotate based on the accused player
+        // Main content container
+        VBox mainContentVBox = new VBox(10, question, yesButton, noButton);
+        mainContentVBox.setAlignment(Pos.BOTTOM_CENTER);
+        mainContentVBox.setRotate(rotationAngle); // Rotate based on the accused player
 
-        StackPane dialogPane = new StackPane(dialogVBox);
-        dialogPane.setPrefSize(200, 120); // Adjust size as needed
+        // "Accusen't" button with its own layout to be placed on the opposite side
+        Button accuseNotButton = new Button("Accusen't");
+        accuseNotButton.setOnAction(e -> dialog.close());
+        accuseNotButton.setStyle("-fx-background-color: darkgreen; -fx-text-fill: white;"); // Dark green for 'cancel' action
+
+        VBox accuseNotVBox = new VBox(accuseNotButton);
+        accuseNotVBox.setAlignment(Pos.BOTTOM_CENTER);
+        accuseNotVBox.setRotate(rotationAngle - 180);
+        accuseNotVBox.setPickOnBounds(false); // This ensures that only the visible parts of the VBox receive mouse events.
+
+        // StackPane to layer the main content and the "Accusen't" button
+        StackPane dialogPane = new StackPane();
+        // Use alignment and padding to position the "Accusen't" button correctly within the dialog
+        StackPane.setAlignment(mainContentVBox, Pos.TOP_CENTER);
+        StackPane.setAlignment(accuseNotVBox, Pos.BOTTOM_CENTER);
+        dialogPane.getChildren().addAll(mainContentVBox, accuseNotVBox);
+        dialogPane.setPrefSize(200, 300); // Adjust size as needed
+        dialogPane.setStyle("-fx-background-color: #330000;"); // A dark, muted red background for the confrontation theme
 
         Scene dialogScene = new Scene(dialogPane);
         dialog.setScene(dialogScene);
@@ -229,12 +303,7 @@ public class MancalaBoardGroup extends Group {
 //        dialog.setScene(dialogScene);
 //        dialog.showAndWait();
 //    }
-    private void reportCheating() {
-        // Logic to handle the cheating report
-        System.out.println("Cheating Penalized.");
-        game.gamePenalties.applyPenalty(game.getCurrentPlayer(), this);
-        // Placeholder for additional actions, e.g., notify server, log event, etc.
-    }
+
     // Method to create pit node (implement as needed)
     private Node createPitNode(int pitIndex) {
         System.out.print("-");
@@ -263,7 +332,7 @@ public class MancalaBoardGroup extends Group {
 //        // Add a more pronounced InnerShadow effect
         InnerShadow innerShadow = new InnerShadow();
         innerShadow.setRadius(10.0); // Increase the radius for a larger shadow
-        innerShadow.setColor(Color.color(0.0, 0.0, 0.0,0.8)); // Fully opaque black for stronger shadow
+        innerShadow.setColor(Color.color(0.0, 0.0, 0.0, 0.8)); // Fully opaque black for stronger shadow
         innerShadow.setOffsetX(0); // Center the shadow
         innerShadow.setOffsetY(0); // Center the shadow
 // Add DropShadow effect to the inner pit
@@ -322,8 +391,9 @@ public class MancalaBoardGroup extends Group {
         // Set up detection for drag gestures
         final double[] startPosition = new double[2];
         pitGroup.setOnMousePressed(event -> {
-            if(event.isAltDown()){
+            if (event.isAltDown()) {
                 System.out.println("CHEAT2 ALT HELD");
+                cheatAction(pitIndex);
             }
             // Store the start position
             startPosition[0] = event.getSceneX();
@@ -334,7 +404,7 @@ public class MancalaBoardGroup extends Group {
         pitGroup.setOnMouseDragged(event -> {
             // Calculate the drag distance
             // Set a threshold for the drag distance to consider it an intentional drag
-                pitGroup.setUserData(Boolean.TRUE); // Mark as a drag
+            pitGroup.setUserData(Boolean.TRUE); // Mark as a drag
 
         });
         pitGroup.setOnMouseReleased(event -> {
@@ -351,10 +421,10 @@ public class MancalaBoardGroup extends Group {
     private double calculateXPosition(int pitIndex) {
         // Calculate and return the X position for the pit based on its index
         // This is just a placeholder logic. You should adjust it as per your layout
-       // return 50 + (pitIndex % 6) * pitPadding * pitRadius+20; // Example layout
+        // return 50 + (pitIndex % 6) * pitPadding * pitRadius+20; // Example layout
         int indexInRow = pitIndex % BOARDLENGTH;
-        double additionalSpacing=0;
-        double extraSpaceBetweenPits=0;
+        double additionalSpacing = 0;
+        double extraSpaceBetweenPits = 0;
 
         double startingX = leftMargin + mancalaWidth + additionalSpacing; // Increase starting X position
 
@@ -407,7 +477,7 @@ public class MancalaBoardGroup extends Group {
     private double calculateMancalaPositionX(int index) {
         // Assuming Mancalas are at the ends of the board
         if (index == MANCALA1) {
-            return leftMargin- mancalaWidth / 2; // Position for the first Mancala
+            return leftMargin - mancalaWidth / 2; // Position for the first Mancala
         } else { // MANCALA2
             return BOARDX - rightMargin; // Position for the second Mancala
         }
@@ -421,42 +491,46 @@ public class MancalaBoardGroup extends Group {
         // Center the Mancala vertically between the two rows
         return (upperRowY + lowerRowY) / 2 - mancalaHeight / 4;// Assuming 'height' is the height of the board
     }
-// Assuming this is part of a class that has access to 'board', 'game', and 'updateUI'
-    private void handlePlacingPhase(int pitIndex) {
-    int pitStones = board.getStones(pitIndex);
-    System.out.println("DROP phase " + game.players[game.getCurrentPlayer()].getHand() + " STONES");
 
-    if (game.players[game.getCurrentPlayer()].getHand() >= 1) {
-        board.placeStone(pitIndex, game.getCurrentPlayer());
-        game.players[game.getCurrentPlayer()].drop(1);
+    // Assuming this is part of a class that has access to 'board', 'game', and 'updateUI'
+    private void handlePlacingPhaseMancala(int pitIndex) {
+        int pitStones = board.getStones(pitIndex);
+        System.out.println("DROP phase " + game.players[game.getCurrentPlayer()].getHand() + " STONES");
 
-        if (game.players[game.getCurrentPlayer()].getHand() == 0) {
+        if (game.players[game.getCurrentPlayer()].getHand() >= 1) {
+            board.placeStone(pitIndex, game.getCurrentPlayer());
+            game.players[game.getCurrentPlayer()].drop(1);
+            game.addMove(ActionType.CAPTURE_STONES, pitIndex);
+            if (game.players[game.getCurrentPlayer()].getHand() == 0) {
 //                if (board.isPitPlayerMancala(pitIndex, game.getCurrentPlayer())) {
 //                    // If so, the current player gets another turn
 //                    // (Adjust this logic based on your game's rules)
 //                    // For example, you might not change the current player or reset the turn state
 //                    //game.resetTurnState();
 //                } else {
-            // Otherwise, end the turn and switch to the next player
-            processLastStonePlacement(pitIndex, pitStones);
-            //game.resetTurnState();
-            //game.endTurn();
-            //updateCurrentPlayerIndicator();
-            // game.switchToNextPlayer();
+                // Otherwise, end the turn and switch to the next player
+                processLastStonePlacement(pitIndex, pitStones);
+                //game.resetTurnState();
+                //game.endTurn();
+                //updateCurrentPlayerIndicator();
+                // game.switchToNextPlayer();
 
+            }
         }
     }
-}
 
-    private void handleTakingPhase(int pitIndex) {
-        System.out.println("TAKE phase");
-        if (board.isPitValidAndBelongsToCurrentPlayer(pitIndex, game.getCurrentPlayer())) {
-            game.players[game.getCurrentPlayer()].addStonesToHand(board.take(pitIndex));
-            game.initiateStonePlacement();
-        }
-    }
+//    private void handleTakingPhase(int pitIndex) {
+//        System.out.println("TAKE phase");
+//        if (board.isPitValidAndBelongsToCurrentPlayer(pitIndex, game.getCurrentPlayer())) {
+//            game.players[game.getCurrentPlayer()].addStonesToHand(board.take(pitIndex));
+//            game.initiateStonePlacement();
+//            game.addMove(ActionType.GET_STONES,pitIndex);
+//        }
+//    }
+
     /**
      * Handles a click event on a pit.
+     *
      * @param pitIndex The index of the pit that was clicked.
      */
     public void handlePitClick(int pitIndex) {
@@ -468,7 +542,7 @@ public class MancalaBoardGroup extends Group {
             if (game.players[game.getCurrentPlayer()].getHand() >= 1) {
                 board.placeStone(pitIndex, game.getCurrentPlayer());
                 game.players[game.getCurrentPlayer()].drop(1);
-
+                game.addMove(ActionType.PLACE_STONE, pitIndex);
                 if (game.players[game.getCurrentPlayer()].getHand() == 0) {
                     processLastStonePlacement(pitIndex, pitStones);
                 }
@@ -479,9 +553,11 @@ public class MancalaBoardGroup extends Group {
                 if (game.isNewTurn) {//this is to swap the cheating buttons to set the report window
                     toggleButtonStates(); // Adjust this to target specific buttons or actions as needed
                     game.isNewTurn = false; // Reset the flag since we've handled the new turn's start
+
                 }
 
                 game.players[game.getCurrentPlayer()].addStonesToHand(board.take(pitIndex));
+                game.addMove(ActionType.GRAB_STONES, pitIndex);
                 game.initiateStonePlacement();
             }
         }
@@ -493,24 +569,52 @@ public class MancalaBoardGroup extends Group {
     private void processLastStonePlacement(int pitIndex, int pitStones) {
         System.out.println("PROCESSING last stone");
         if (board.isPitPlayerMancala(pitIndex, game.getCurrentPlayer())) {
-            // Player gets another turn, no state reset
+            // MANCALA END Player gets another turn,
             game.resetTurnState();
-            System.out.println( "Player gets another turn, no state reset");
+            System.out.println("Player gets another turn");
         } else if (pitStones == 0 && board.isPitOnCurrentPlayerSide(pitIndex, game.getCurrentPlayer())) {
-            int capturedStones = board.captureOppositeStones(pitIndex);
-            //add these to mancala ui or base mancala's on score
-            board.addCapturedStonesToMancala(capturedStones, game.getCurrentPlayer());
-            game.players[game.getCurrentPlayer()].addScore(capturedStones);
+
+            if (game.preferences.isStealOpposite()) {
+                int capturedStones = board.captureOppositeStones(pitIndex);
+                board.addCapturedStonesToMancala(capturedStones, game.getCurrentPlayer());
+                game.players[game.getCurrentPlayer()].addScore(capturedStones);
+                game.addMove(ActionType.CAPTURE_STONES, board.getOppositePit(pitIndex));
+                if (game.preferences.isCapturePlacedAlso()) {
+                    int capturedStone = board.captureOppositeStones(pitIndex);
+                    //captures opposite stones as per rules, currently doesn't capture placed stone
+                    board.addCapturedStonesToMancala(capturedStone, game.getCurrentPlayer());
+                    game.players[game.getCurrentPlayer()].addScore(capturedStone);
+                    game.addMove(ActionType.CAPTURE_STONES, pitIndex);
+                }
+            }
+
             game.endTurn();
 
-        } else if (pitStones>0 && board.isPitEnemySide(pitIndex, game.getCurrentPlayer())) {
-            game.players[game.getCurrentPlayer()].addStonesToHand(board.take(pitIndex));
-            game.initiateStonePlacement();
-        } else if (pitStones>0 && board.isPitOnCurrentPlayerSide(pitIndex, game.getCurrentPlayer())) {
-            game.players[game.getCurrentPlayer()].addStonesToHand(board.take(pitIndex));
-            game.initiateStonePlacement();
-        } else if (pitStones==0 && board.isPitEnemySide(pitIndex, game.getCurrentPlayer())) {
+        } else if (pitStones == 0 && board.isPitEnemySide(pitIndex, game.getCurrentPlayer())) {
             game.endTurn();
+
+
+            //this is for when play continues if hand empty, preferences?
+        } else if (pitStones > 0 && board.isPitEnemySide(pitIndex, game.getCurrentPlayer())) {
+
+            if (game.preferences.isContinueAfterEmptyHand_AutoPickup()) {
+
+                game.players[game.getCurrentPlayer()].addStonesToHand(board.take(pitIndex));
+                game.addMove(ActionType.GRAB_STONES, pitIndex);
+                game.initiateStonePlacement();
+            } else {
+                game.endTurn();
+            }
+        } else if (pitStones > 0 && board.isPitOnCurrentPlayerSide(pitIndex, game.getCurrentPlayer())) {
+
+            if (game.preferences.isContinueAfterEmptyHand_AutoPickup()) {
+
+                game.players[game.getCurrentPlayer()].addStonesToHand(board.take(pitIndex));
+                game.addMove(ActionType.GRAB_STONES, pitIndex);
+                game.initiateStonePlacement();
+            } else {
+                game.endTurn();
+            }
 
 
         } else {
@@ -520,8 +624,10 @@ public class MancalaBoardGroup extends Group {
             updateCurrentPlayerIndicator();
         }
     }
+
     /**
      * Handles a click event on a pit in the Mancala game.
+     *
      * @param pitIndex The index of the pit that was clicked.
      */
     public void handleClickMancala(int pitIndex) {
@@ -535,14 +641,16 @@ public class MancalaBoardGroup extends Group {
         System.out.println("CLK MANCALA " + pitIndex + "stones: " + pitStones);
 // Checking if it's currently the placing phase or taking phase
         if (game.isPlacingPhase()) {
-            handlePlacingPhase(pitIndex);
+            handlePlacingPhaseMancala(pitIndex);
         } else {
-            handleTakingPhase(pitIndex);
+            System.out.println("you are trying to take from a mancala");
+            // handleTakingPhase(pitIndex);
         }
 
         // Update the UI after handling the click
         updateUI();
     }
+
     private boolean isMancalaOfCurrentPlayer(int pitIndex) {
         // Check if the pitIndex corresponds to the current player's Mancala
         // You need to implement this logic based on how you determine the Mancala for each player
@@ -552,7 +660,7 @@ public class MancalaBoardGroup extends Group {
     }
 
     private Text createStoneCountLabel(int pitIndex) {
-        Text label = new Text("V "+pitIndex);
+        Text label = new Text("V " + pitIndex);
         // Set label properties (font, color, alignment)
         label.setFont(Font.font(20));
         label.setFill(Color.BLACK);
@@ -560,8 +668,8 @@ public class MancalaBoardGroup extends Group {
 
         // Position the label relative to the corresponding pit node
         // ... Adapt this based on your actual pit node implementation
-        label.setLayoutX(pitNodes[pitIndex].getLayoutX() + pitNodes[pitIndex].getBoundsInLocal().getWidth() / 2);
-        label.setLayoutY(pitNodes[pitIndex].getLayoutY() + pitNodes[pitIndex].getBoundsInLocal().getHeight() / 2);
+        label.setLayoutX(pitNodes[pitIndex].getLayoutX() + pitNodes[pitIndex].getBoundsInLocal().getWidth() / 4);
+        label.setLayoutY(pitNodes[pitIndex].getLayoutY() + pitNodes[pitIndex].getBoundsInLocal().getHeight() / 4);
 
         return label;
     }
@@ -569,7 +677,7 @@ public class MancalaBoardGroup extends Group {
 
     public void updateStoneCounts() {
         for (int i = 0; i < stoneCountLabels.length; i++) {
-            stoneCountLabels[i].setText(String.valueOf(i)+" "+String.valueOf(board.getStones(i)));
+            stoneCountLabels[i].setText(String.valueOf(i) + " " + String.valueOf(board.getStones(i)));
         }
     }
 
@@ -617,8 +725,8 @@ public class MancalaBoardGroup extends Group {
         pit.setFill(gradient);
 //        // Add a more pronounced InnerShadow effect
         InnerShadow innerShadow = new InnerShadow();
-        innerShadow.setRadius(pitRadius / 2); // Increase the radius for a larger shadow
-        innerShadow.setColor(Color.color(0.0, 0.0, 0.0,0.8)); // Fully opaque black for stronger shadow
+        innerShadow.setRadius((double) pitRadius / 2); // Increase the radius for a larger shadow
+        innerShadow.setColor(Color.color(0.0, 0.0, 0.0, 0.8)); // Fully opaque black for stronger shadow
         innerShadow.setOffsetX(0); // Center the shadow
         innerShadow.setOffsetY(0); // Center the shadow
 
@@ -646,6 +754,7 @@ public class MancalaBoardGroup extends Group {
             pitGroup.getChildren().add(stone);
         }
     }
+
     private Node updateMancalaUI(int mancalaIndex) {
         Group mancalaGroup = (Group) mancalas[mancalaIndex];
         Rectangle mancalaRectangle = (Rectangle) mancalaGroup.getChildren().get(0); // Now treating it as a Rectangle
@@ -696,10 +805,10 @@ public class MancalaBoardGroup extends Group {
         mindicator.setLayoutX(-10);
         mindicator.setLayoutY(-10);
         mindicator.setX(player == 1 ? 0 : 424);
-        Rectangle mancala= (Rectangle) ((Group) mancalas[player-1]).getChildren().get(0);
+        Rectangle mancala = (Rectangle) ((Group) mancalas[player - 1]).getChildren().get(0);
 
-       // Align the mindicator with the Mancala
-        mindicator.setLayoutX(mancala.getLayoutX() - 10 ); // Offset to surround the Mancala
+        // Align the mindicator with the Mancala
+        mindicator.setLayoutX(mancala.getLayoutX() - 10); // Offset to surround the Mancala
         mindicator.setLayoutY(mancala.getLayoutY() - 10);
 
 
@@ -713,7 +822,7 @@ public class MancalaBoardGroup extends Group {
 
         // Position the indicator (assuming the top of the board for Player 1, bottom for Player 2)
         indicator.setY(player == 1 ? 0 : 424); // Adjust position as needed
-        indicators.getChildren().addAll(indicator,mindicator);
+        indicators.getChildren().addAll(indicator, mindicator);
         return indicators;
     }
 
@@ -799,6 +908,7 @@ public class MancalaBoardGroup extends Group {
 
         return arrowHeadsGroup;
     }
+
     public void updateHandEmptyIndicator() {
         int currentPlayer = game.getCurrentPlayer();
 
@@ -814,7 +924,7 @@ public class MancalaBoardGroup extends Group {
 
             // Position the background centered on the text
             handEmptyBackground.setX(handEmptyIndicator.getX());//- padding - textBounds.getWidth() / 2);
-            handEmptyBackground.setY(handEmptyIndicator.getY()-textBounds.getHeight()+14); //- textBounds.getHeight() - padding);
+            handEmptyBackground.setY(handEmptyIndicator.getY() - textBounds.getHeight() + 14); //- textBounds.getHeight() - padding);
 
             // Adjust the orientation based on the current player
             if (currentPlayer == 0) {
@@ -833,6 +943,10 @@ public class MancalaBoardGroup extends Group {
         // Check if cheating is allowed based on the game's state and rules
         if (canCheat(pitIndex)) {
             System.out.println("Cheating at pit " + pitIndex);
+
+            //just a double drop
+            handlePitClick(pitIndex);
+            handlePitClick(pitIndex);
             // Perform the cheat action, e.g., adding a stone
             //board.addStoneToPit(pitIndex, 1); // Adjust this action as needed
             updateUI();
@@ -865,6 +979,97 @@ public class MancalaBoardGroup extends Group {
         }
     }
 
+    private void createLogButton() {
+        logButton = new Button("Show Move Logs");
+        logButton.setLayoutX(600); // Adjust the X position as needed
+        logButton.setLayoutY(20); // Adjust the Y position as needed
 
+        logButton.setOnAction(event -> showMoveLogs());
+
+        this.getChildren().add(logButton);
+    }
+
+    private void showMoveLogs() {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle("Move Logs");
+        alert.setHeaderText("All Moves Made");
+
+        // Create a scrollable text area to display the logs
+        ScrollPane scrollPane = new ScrollPane();
+        TextArea textArea = new TextArea();
+        textArea.setEditable(false);
+
+        // Assuming game.getMoveLogs() returns a String with all move logs
+        textArea.setText(game.getMoveLogs() + "RRR" + game.checkGame());
+
+        scrollPane.setContent(textArea);
+        scrollPane.setFitToWidth(true);
+        scrollPane.setPrefHeight(400); // Adjust as needed
+
+        alert.getDialogPane().setContent(scrollPane);
+
+        alert.showAndWait();
+    }
+
+    private void showLastTurn() {
+        int player = game.getAccusingPlayerNumber();
+        boolean innocent= game.checkTurnVerily();
+        Alert alert = new Alert(Alert.AlertType.WARNING);
+        alert.setTitle("Move Logs");
+        alert.setHeaderText("Moves Last Turn");
+
+        // Create a scrollable text area to display the logs
+        ScrollPane scrollPane = new ScrollPane();
+        TextArea textArea = new TextArea();
+        textArea.setEditable(false);
+
+        // Assuming game.getMoveLogs() returns a String with all move logs
+        textArea.setText(( innocent? "INNOCENT" : "GUILTY") + "\n" + game.getEvidence() + "\n" + game.getTurnLog());
+
+
+        scrollPane.setContent(textArea);
+        scrollPane.setFitToWidth(true);
+        scrollPane.setPrefHeight(400); // Adjust as needed
+
+        alert.getDialogPane().setContent(scrollPane);
+
+
+        // Show the alert and wait for the user to close it
+        Optional<ButtonType> result = alert.showAndWait();
+
+        // Check if OK was clicked or if the alert was closed in any other way
+        if (!result.isPresent() || result.get() == ButtonType.OK) {
+            // The OK button was clicked or the dialog was closed
+            if(innocent){
+
+                game.gamePenalties.applyPenalty(player, this);
+                game.addMove(ActionType.PENALIZED, -1, player);
+            }
+            performActionOnDialogClose();
+        }
+    }
+
+    private void performActionOnDialogClose() {
+        // Place the code you want to execute after the dialog closes here
+        System.out.println("Dialog closed or OK clicked");
+    }
+
+    private void setupGestureTracking() {
+        gestureHandler = new GestureHandler(20); // Adjust tolerance as needed
+        Circle draggableCircle = new Circle(50, Color.RED); // Example starting point
+        draggableCircle.setCenterX(100); // Starting X
+        draggableCircle.setCenterY(100); // Starting Y
+        draggableCircle.setRadius(30); // Circle radius
+
+        // Add mouse event handlers for the circle
+        draggableCircle.setOnMousePressed(event -> gestureHandler.onDragStarted(event.getSceneX(), event.getSceneY()));
+        draggableCircle.setOnMouseDragged(event -> gestureHandler.onDrag(event.getSceneX(), event.getSceneY(), this));
+        draggableCircle.setOnMouseReleased(event -> gestureHandler.onDragEnded());
+
+        this.getChildren().add(draggableCircle); // Add the circle to the MancalaBoardGroup
+    }
+    public void add(Node child) {
+        this.getChildren().add(child);
+    }
 }
 

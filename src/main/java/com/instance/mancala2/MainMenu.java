@@ -60,7 +60,7 @@ public class MainMenu {
         Platform.runLater(() -> {
             try {
                 MainMenu menu = new MainMenu(stage); // Assuming MainMenu has a constructor that accepts Stage
-                Scene scene = new Scene(menu.getView(), 800, 600); // Customize dimensions as necessary
+                Scene scene = new Scene(menu.getView(),640,400); // Customize dimensions as necessary
                 stage.setScene(scene);
                 stage.show(); // Make sure the stage is shown
             } catch (Exception e) {

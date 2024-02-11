@@ -99,6 +99,13 @@ public class MancalaBoard {
 //    }
 
     public boolean placeStone(int pitIndex, int currentPlayer){
+        boolean wasEmpty;
+        wasEmpty= pits[pitIndex] == 0;
+        pits[pitIndex]++;
+        return wasEmpty;
+
+    }
+    public boolean distributeStone(int pitIndex, int currentPlayer){
 
         boolean wasEmpty;
         wasEmpty= pits[pitIndex] == 0;
@@ -138,7 +145,7 @@ public class MancalaBoard {
     public Boolean isPlayer2NoMove(){
         Boolean flag = true;
         //checks if one side has no stones in any pits
-        System.out.println("}}}}}}}}}}}}}}}}}}}}}}}}}}"+getPitCount());
+
         for (int i = getPitCount() / 2; i < getPitCount(); i++) {
 
             if (pits[i] == 0) {
@@ -156,8 +163,18 @@ public class MancalaBoard {
 
         return pitIndex >= startPit && pitIndex <= endPit;
     }
-
-    public int captureOppositeStones(int pitIndex) {
+    public int captureStones(int pitIndex){
+        if (pitIndex > 0 || pitIndex < 2*BOARDLENGTH) {
+            throw new IllegalArgumentException("Invalid pit index: " + pitIndex);
+        }
+        // Get the number of stones in the pit
+        int capturedStones = pits[pitIndex];
+        // Remove the stones from the pit
+        pits[pitIndex] = 0;
+        // Return the number of captured stones
+        return capturedStones;
+    }
+    public int getOppositePit(int pitIndex){
         // Calculate the index of the opposite pit
         int oppositePitIndex;
 
@@ -172,7 +189,11 @@ public class MancalaBoard {
             // Invalid pit index
             throw new IllegalArgumentException("Invalid pit index: " + pitIndex);
         }
+        return oppositePitIndex;
+    }
+    public int captureOppositeStones(int pitIndex) {
 
+        int oppositePitIndex = getOppositePit(pitIndex);
         // Get the number of stones in the opposite pit
         int capturedStones = pits[oppositePitIndex];
 
@@ -211,7 +232,7 @@ public class MancalaBoard {
 
         // Add captured stones to the player's Mancala
         for (int i = 0; i < capturedStones; i++) {
-            placeStone(mancalaIndex, currentPlayer);
+            distributeStone(mancalaIndex, currentPlayer);
         }
     }
     public int whoHasMorePoints(){
@@ -429,7 +450,7 @@ void distributeStones(int currentPlayer, AtomicInteger mancalaScore, AtomicInteg
                     // After animation finishes, update game state and UI
                     mancalaScore.decrementAndGet();
                     scoreToDistribute.decrementAndGet();
-                    placeStone(finalRandomPitIndex, currentPlayer); // Or directly manipulate pits array if needed
+                    distributeStone(finalRandomPitIndex, currentPlayer); // Or directly manipulate pits array if needed
                     setStones(mancalaIndex, mancalaScore.get());
 
                     // Remove the animated stone and update UI

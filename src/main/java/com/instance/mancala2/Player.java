@@ -2,33 +2,46 @@ package com.instance.mancala2;
 
 public class Player {
 
-    private int sleeveStone;
+    private int sleeveStones;
     private int hand;
     private int wins;
     private String name;
-
-    public Player(String name){
+    private MancalaGame game;
+    public Player(String name, MancalaGame game){
 
         this.name = name;
+        this.game = game;
     }
-    public int getSleeveStone() {
-        return sleeveStone;
+    public int getSleeveStones() {
+        return sleeveStones;
     }
 
-    public void setSleeveStone(int sleeveStone) {
-        this.sleeveStone = sleeveStone;
+    public void setSleeveStones(int sleeveStones) {
+        this.sleeveStones = sleeveStones;
     }
     public int useSleeveStone() {
-        this.sleeveStone--;
+        this.sleeveStones--;
         return 1;
     }
     public void storeStone(){
         System.out.println("STORE");
         if(hand>0) {
-            setSleeveStone(getSleeveStone() + 1);
+            game.addMove(ActionType.STORE_STONE,-1);
+            setSleeveStones(getSleeveStones() + 1);
             hand--;
             System.out.println("++++++ ");
-            System.out.println(getSleeveStone() + " stones");
+            System.out.println(getSleeveStones() + " stones");
+        }
+
+    }
+    public void unsleeveStone(){
+        System.out.println("UNSLEEVE");
+        if(sleeveStones>0) {
+            game.addMove(ActionType.UNSLEEVE_STONE,-1);
+            setSleeveStones(getSleeveStones() - 1);
+            hand++;
+            System.out.println("++++++ ");
+            System.out.println(getSleeveStones() + " stones");
         }
 
     }
