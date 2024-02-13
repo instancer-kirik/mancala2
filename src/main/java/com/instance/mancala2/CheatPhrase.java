@@ -1,7 +1,7 @@
 package com.instance.mancala2;
 
 public enum CheatPhrase {
-    DEFAULT_PHRASE("Cheated"),
+    DEFAULT_PHRASE("Cheater"),
     CAP("Cap"),
     BS("BS"),
     PRESS_X_TO_DOUBT("X Doubt"),

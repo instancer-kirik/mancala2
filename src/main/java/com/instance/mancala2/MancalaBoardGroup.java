@@ -1,9 +1,8 @@
+
 package com.instance.mancala2;
 
-import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
+import com.instance.mancala2.gluonViews.MancalaGameComponent;
 import javafx.geometry.Bounds;
-import javafx.geometry.Insets;
 import javafx.geometry.Point2D;
 import javafx.geometry.Pos;
 import javafx.scene.Group;
@@ -15,7 +14,6 @@ import javafx.scene.effect.InnerShadow;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseEvent;
-import javafx.scene.layout.Pane;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
@@ -26,19 +24,15 @@ import javafx.scene.shape.*;
 import javafx.scene.text.Text;
 import javafx.scene.text.Font;
 import javafx.scene.text.TextAlignment;
-import javafx.stage.Modality;
-import javafx.stage.Stage;
-import javafx.stage.StageStyle;
+import javafx.stage.*;
 
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 import static com.instance.mancala2.MancalaBoard.*;
 
+
 public class MancalaBoardGroup extends Group {
-    MancalaGame game;
+    public MancalaGameComponent game;
     private final MancalaBoard board;
     //private int currentPlayer
     private final Node[] pitNodes;
@@ -66,17 +60,19 @@ public class MancalaBoardGroup extends Group {
     private List<Button> buttons = new ArrayList<>();
     private Point2D prevPoint;
     private Point2D startPoint;
-    private final double startingRadius = 30;
-    private final double directionChangeTolerance = 0.5; // Tolerance for detecting direction change (smaller is more sensitive)
-
-    //private ObservableList<Circle> directionChangePoints = FXCollections.observableArrayList();
+    private String imgPath = "/images/wood_texture4.jpg";
+    private String imgPath2 = "/images/wood_texture5.jpg";
+     //private ObservableList<Circle> directionChangePoints = FXCollections.observableArrayList();
     private GestureHandler gestureHandler;
-    public MancalaBoardGroup(MancalaBoard board, MancalaGame game) {
+    // Assuming you have a map to track the association between buttons and their overlay rectangles
+    private Map<Button, StackPane> overlayMap = new HashMap<>();
+
+    public MancalaBoardGroup(MancalaBoard board, MancalaGameComponent game) {
         this.board = board;
         this.game = game;
 
         this.mancalas = new Node[game.players.length];
-        Image woodImage = new Image(getClass().getResourceAsStream("/images/wood_texture.jpg"));
+        Image woodImage = new Image(getClass().getResourceAsStream(game.preferences.isAltWoodTexture()?imgPath2:imgPath));
         ImageView woodImageView = new ImageView(woodImage);
 
         woodImageView.setFitWidth(700); // Adjust to your desired width
@@ -135,40 +131,50 @@ public class MancalaBoardGroup extends Group {
         reportCheatingButton.setLayoutY(450); // Adjust based on your layout
 
         reportCheatingButton.setOnAction(event -> {
-                    // Accuse player 1, window faces player 1
-                    game.addMove(ActionType.ACCUSE, -1, 1);
-                    game.addMove(ActionType.GET_ACCUSED, -1, 0);
-                    showReportConfirmation(game.getStage(),
-                            () -> {
-                                game.gamePenalties.applyPenalty(0, this);
-                                game.addMove(ActionType.PENALIZED, -1, 0);
-                            }, // Action for "Yes"
-                            () -> {
+            addOverlayToButton(reportCheatingButton);
+            // Accuse player 1, window faces player 1
+            game.addMove(ActionType.ACCUSE, -1, 1);
+            game.addMove(ActionType.GET_ACCUSED, -1, 0);
+            showReportConfirmation(this.getScene().getWindow(),
+                    () -> {
+                        game.gamePenalties.applyPenalty(0, this, false);
+                        game.addMove(ActionType.PENALIZED, -1, 0);
+                    }, // Action for "Yes"
+                    () -> {
 
-                                showLastTurn();
-                            }, // Action for "No"
-                            180 // Window faces player 1
-                    );
-                }
+                        showLastTurn();
+                    }, // Action for "No"
+                    () ->
+                    {removeOverlayFromButton(reportCheatingButton);}
+                    ,
+                    180 // Window faces player 1
+            );
+        }
         );
         reportCheatingButton.setDisable(true);
         reportCheatingButton.setStyle("-fx-opacity: 0.5; -fx-background-color: #cccccc;"); // Greyed out
+        // Call this method when you need to add an overlay to a button
+// 'parent' should be replaced with the actual parent container of your button
 
         Button reportCheatingButton2 = new Button(game.preferences.getCheatPhrase().toString());
         reportCheatingButton2.setLayoutX(610); // Adjust based on your layout
         reportCheatingButton2.setLayoutY(50); // Adjust based on your layout
         reportCheatingButton2.setRotate(180);
         reportCheatingButton2.setOnAction(event -> {
+            addOverlayToButton(reportCheatingButton2);
             game.addMove(ActionType.ACCUSE, -1, 0);
             game.addMove(ActionType.GET_ACCUSED, -1, 1);
-            showReportConfirmation(game.getStage(),
+            showReportConfirmation(this.getScene().getWindow(),
                     () -> {
-                        game.gamePenalties.applyPenalty(1, this);
+                        game.gamePenalties.applyPenalty(1, this, false);
                         game.addMove(ActionType.PENALIZED, -1, 1);
                     }, // Action for "Yes"
                     () -> {
                         showLastTurn();
                     }, // Action for "No"
+                     () ->
+                    {removeOverlayFromButton(reportCheatingButton2);}
+                    ,
                     0 // Window faces player 2, adjust angle as needed
             );
         });
@@ -178,7 +184,7 @@ public class MancalaBoardGroup extends Group {
         buttons.add(reportCheatingButton2);
         this.getChildren().addAll(reportCheatingButton, reportCheatingButton2);
 
-        createLogButton();
+        //createLogButton();
         // Example positions
         double posX = 300;
         double posY = 200;
@@ -216,65 +222,165 @@ public class MancalaBoardGroup extends Group {
             throw new IllegalArgumentException("Invalid pit index: " + pitIndex);
         }
     }
-
-    public void showReportConfirmation(Stage owner, Runnable onYes, Runnable onNo, double rotationAngle) {
-        final Stage dialog = new Stage();
-        dialog.initModality(Modality.APPLICATION_MODAL);
-        dialog.initOwner(owner);
-        dialog.initStyle(StageStyle.UNDECORATED);
+    public void showReportConfirmation(Window owner, Runnable onYes, Runnable onNo, Runnable onCancel, double rotationAngle) {
+        Popup popup = new Popup();
 
         Text question = new Text("Did you cheat?");
-        question.setFill(Color.WHITE); // White text for better contrast with a dark background
+        question.setFill(Color.WHITE); // White text for contrast
 
+        // Yes and No buttons
         Button yesButton = new Button("Yes");
-        yesButton.setStyle("-fx-background-color: darkred; -fx-text-fill: white;"); // Dark red with white text
-
         yesButton.setOnAction(e -> {
-
-            dialog.close();
             onYes.run();
+            popup.hide();
         });
 
         Button noButton = new Button("No");
-        noButton.setStyle("-fx-background-color: darkred; -fx-text-fill: white;"); // Consistent styling
-
         noButton.setOnAction(e -> {
-
-            dialog.close();
             onNo.run();
+            popup.hide();
         });
 
-//        VBox dialogVBox = new VBox(10, question, yesButton, noButton);
-//        dialogVBox.setAlignment(Pos.CENTER);
-//        dialogVBox.setRotate(rotationAngle); // Rotate based on the accused player
-        // Main content container
-        VBox mainContentVBox = new VBox(10, question, yesButton, noButton);
-        mainContentVBox.setAlignment(Pos.BOTTOM_CENTER);
-        mainContentVBox.setRotate(rotationAngle); // Rotate based on the accused player
+        // Main content VBox for question and Yes/No buttons
+        VBox mainContent = new VBox(10, question, yesButton, noButton);
+        mainContent.setAlignment(Pos.CENTER);
+        mainContent.setStyle("-fx-background-color: #333; -fx-padding: 20;");
+        mainContent.setRotate(rotationAngle); // Apply rotation to main content
 
-        // "Accusen't" button with its own layout to be placed on the opposite side
-        Button accuseNotButton = new Button("Accusen't");
-        accuseNotButton.setOnAction(e -> dialog.close());
-        accuseNotButton.setStyle("-fx-background-color: darkgreen; -fx-text-fill: white;"); // Dark green for 'cancel' action
+        // Cancel or "Accusen't" button
+        Button cancelButton = new Button("Accusen't");
+        cancelButton.setOnAction(e -> {
+            onCancel.run();
+            popup.hide();
+        });
 
-        VBox accuseNotVBox = new VBox(accuseNotButton);
-        accuseNotVBox.setAlignment(Pos.BOTTOM_CENTER);
-        accuseNotVBox.setRotate(rotationAngle - 180);
-        accuseNotVBox.setPickOnBounds(false); // This ensures that only the visible parts of the VBox receive mouse events.
+        // Separate VBox for the Cancel button to apply opposite rotation
+        VBox cancelContent = new VBox(10, cancelButton);
+        cancelContent.setAlignment(Pos.CENTER);
+        cancelContent.setRotate(-rotationAngle); // Apply opposite rotation to the Cancel button
 
-        // StackPane to layer the main content and the "Accusen't" button
-        StackPane dialogPane = new StackPane();
-        // Use alignment and padding to position the "Accusen't" button correctly within the dialog
-        StackPane.setAlignment(mainContentVBox, Pos.TOP_CENTER);
-        StackPane.setAlignment(accuseNotVBox, Pos.BOTTOM_CENTER);
-        dialogPane.getChildren().addAll(mainContentVBox, accuseNotVBox);
-        dialogPane.setPrefSize(200, 300); // Adjust size as needed
-        dialogPane.setStyle("-fx-background-color: #330000;"); // A dark, muted red background for the confrontation theme
+        // If you want the Cancel button to visually appear at the top or bottom
+        // opposite to the rotation direction, consider adjusting VBox order in the StackPane
+        StackPane container = new StackPane();
+        // Conditionally add content based on desired orientation
+        // This example adds cancelContent above mainContent, adjust as needed
+        container.getChildren().addAll(cancelContent, mainContent);
 
-        Scene dialogScene = new Scene(dialogPane);
-        dialog.setScene(dialogScene);
-        dialog.showAndWait();
+        popup.getContent().add(container);
+        popup.setAutoHide(true);
+
+        // Positioning and showing the popup
+        double x = owner.getX() + (owner.getWidth() / 2) - (300 / 2); // Adjust width as needed
+        double y = owner.getY() + (owner.getHeight() / 2) - (200 / 2); // Adjust height as needed
+        popup.show(owner, x, y);
     }
+
+//    public void showReportConfirmation(Window owner, Runnable onYes, Runnable onNo, Runnable onCancel, double rotationAngle) {
+//        Popup popup = new Popup();
+//
+//        VBox mainContent = new VBox(10);
+//        VBox topContent = new VBox(10);
+//        VBox bottomContent = new VBox(10);
+//
+//        Text question = new Text("Did you cheat?");
+//        Button yesButton = new Button("Yes");
+//        yesButton.setOnAction(e -> {
+//            onYes.run();
+//            popup.hide();
+//        });
+//
+//        Button noButton = new Button("No");
+//        noButton.setOnAction(e -> {
+//            onNo.run();
+//            popup.hide();
+//        });
+//
+//        Button cancelButton = new Button("Cancel");
+//        cancelButton.setOnAction(e -> {
+//            onCancel.run();
+//            popup.hide();
+//        });
+//
+//        // Position buttons based on the 'reversed' flag
+//        if (reversed) {
+//            bottomContent.getChildren().add(cancelButton);
+//            topContent.getChildren().addAll(yesButton, noButton);
+//        } else {
+//            topContent.getChildren().add(cancelButton);
+//            bottomContent.getChildren().addAll(yesButton, noButton);
+//        }
+//
+//        mainContent.getChildren().addAll(topContent, question, bottomContent);
+//        mainContent.setStyle("-fx-background-color: white; -fx-padding: 10; -fx-border-color: black; -fx-border-width: 2;");
+//
+//        popup.getContent().add(mainContent);
+//        popup.setAutoHide(true);
+//        popup.setOnHidden(e -> onCancel.run()); // Ensure onCancel is called if the popup is dismissed
+//
+//        StackPane root = new StackPane();
+//        Scene scene = new Scene(root, 300, 200); // Dummy scene for getting window
+//        popup.show(owner,
+//                owner.getX() + owner.getWidth() / 2 - scene.getWidth() / 2,
+//                owner.getY() + owner.getHeight() / 2 - scene.getHeight() / 2); // Center popup
+//    }
+//        Text question = new Text("Did you cheat?");
+//        question.setFill(Color.WHITE); // White text for better contrast with a dark background
+//
+//        Button yesButton = new Button("Yes");
+//        yesButton.setStyle("-fx-background-color: darkred; -fx-text-fill: white;"); // Dark red with white text
+//
+//        yesButton.setOnAction(e -> {
+//
+//            dialog.close();
+//            onYes.run();
+//        });
+//
+//        Button noButton = new Button("No");
+//        noButton.setStyle("-fx-background-color: darkred; -fx-text-fill: white;"); // Consistent styling
+//
+//        noButton.setOnAction(e -> {
+//
+//            dialog.close();
+//            onNo.run();
+//        });
+//
+////        VBox dialogVBox = new VBox(10, question, yesButton, noButton);
+////        dialogVBox.setAlignment(Pos.CENTER);
+////        dialogVBox.setRotate(rotationAngle); // Rotate based on the accused player
+//        // Main content container
+//        VBox mainContentVBox = new VBox(10, question, yesButton, noButton);
+//        mainContentVBox.setAlignment(Pos.BOTTOM_CENTER);
+//        mainContentVBox.setRotate(rotationAngle); // Rotate based on the accused player
+//// Warning text for false accusations
+//        Text warningText = new Text("False accusations incur penalties");
+//        warningText.setFill(Color.YELLOW); // Yellow for visibility
+//        warningText.setStyle("-fx-font-weight: bold;"); // Bold for emphasis
+//
+//        // "Accusen't" button with its own layout to be placed on the opposite side
+//        Button accuseNotButton = new Button("Accusen't");
+//        accuseNotButton.setOnAction(e -> {dialog.close();
+//        onCancel.run();
+//        });
+//        accuseNotButton.setStyle("-fx-background-color: darkgreen; -fx-text-fill: white;"); // Dark green for 'cancel' action
+//
+//        VBox accuseNotVBox = new VBox(10,warningText,accuseNotButton);
+//        accuseNotVBox.setAlignment(Pos.BOTTOM_CENTER);
+//        accuseNotVBox.setRotate(rotationAngle - 180);
+//        accuseNotVBox.setPickOnBounds(false); // This ensures that only the visible parts of the VBox receive mouse events.
+//
+//        // StackPane to layer the main content and the "Accusen't" button
+//        StackPane dialogPane = new StackPane();
+//        // Use alignment and padding to position the "Accusen't" button correctly within the dialog
+//        StackPane.setAlignment(mainContentVBox, Pos.TOP_CENTER);
+//        StackPane.setAlignment(accuseNotVBox, Pos.BOTTOM_CENTER);
+//        dialogPane.getChildren().addAll(mainContentVBox, accuseNotVBox);
+//        dialogPane.setPrefSize(200, 300); // Adjust size as needed
+//        dialogPane.setStyle("-fx-background-color: #330000;"); // A dark, muted red background for the confrontation theme
+//
+//        Scene dialogScene = new Scene(dialogPane);
+//        dialog.setScene(dialogScene);
+//        dialog.showAndWait();
+//    }
 
 //    public void showReportConfirmation(Stage owner) {
 //        final Stage dialog = new Stage();
@@ -528,11 +634,13 @@ public class MancalaBoardGroup extends Group {
 //        }
 //    }
 
-    /**
+
+/**
      * Handles a click event on a pit.
      *
      * @param pitIndex The index of the pit that was clicked.
      */
+
     public void handlePitClick(int pitIndex) {
         int pitStones = board.getStones(pitIndex);
         System.out.println("CLICKED Index: " + pitIndex + ", Stones: " + pitStones);
@@ -625,11 +733,13 @@ public class MancalaBoardGroup extends Group {
         }
     }
 
-    /**
+
+/**
      * Handles a click event on a pit in the Mancala game.
      *
      * @param pitIndex The index of the pit that was clicked.
      */
+
     public void handleClickMancala(int pitIndex) {
         // Check if the clicked Mancala belongs to the current player
         if (!isMancalaOfCurrentPlayer(pitIndex)) {
@@ -966,7 +1076,18 @@ public class MancalaBoardGroup extends Group {
         for (Button button : buttons) {
             // Toggle the disabled state
             button.setDisable(!button.isDisabled());
-
+            removeOverlayFromButton(button);
+// Check if we have an overlay for this button
+//            StackPane overlay = overlayMap.get(button);
+//            if (overlay != null) {
+//                // Remove the overlay from its parent container
+//                Pane parent = (Pane) overlay.getParent();
+//                if (parent != null) {
+//                    parent.getChildren().remove(overlay);
+//                }
+//                // Remove the entry from the map as it's no longer needed
+//                overlayMap.remove(button);
+//            }
             // Update styles based on the new disabled state
             if (button.isDisabled()) {
                 // Apply disabled style
@@ -1013,6 +1134,7 @@ public class MancalaBoardGroup extends Group {
 
     private void showLastTurn() {
         int player = game.getAccusingPlayerNumber();
+        int accused = game.getAccusedPlayerNumber();
         boolean innocent= game.checkTurnVerily();
         Alert alert = new Alert(Alert.AlertType.WARNING);
         alert.setTitle("Move Logs");
@@ -1042,8 +1164,11 @@ public class MancalaBoardGroup extends Group {
             // The OK button was clicked or the dialog was closed
             if(innocent){
 
-                game.gamePenalties.applyPenalty(player, this);
+                game.gamePenalties.applyPenalty(player, this, false);
                 game.addMove(ActionType.PENALIZED, -1, player);
+            }else{
+                game.gamePenalties.applyPenalty(accused, this, true);
+                game.addMove(ActionType.PENALIZED, -1, accused);
             }
             performActionOnDialogClose();
         }
@@ -1071,5 +1196,41 @@ public class MancalaBoardGroup extends Group {
     public void add(Node child) {
         this.getChildren().add(child);
     }
+    // This method adds an overlay to a button
+    private void addOverlayToButton(Button button) {
+        Rectangle overlay = new Rectangle(button.getWidth(), button.getHeight(), Color.color(0, 0, 0, 0.5));
+        overlay.setArcWidth(10); // Assuming a fixed arc width, adjust as necessary
+        overlay.setArcHeight(10); // Assuming a fixed arc height, adjust as necessary
+
+        StackPane overlayPane = new StackPane(overlay);
+        overlayPane.setLayoutX(button.getLayoutX());
+        overlayPane.setLayoutY(button.getLayoutY());
+
+        // Make the button invisible (not disabled, to keep its space)
+        button.setVisible(false);
+
+        // Add the overlay pane directly to the group
+        this.getChildren().add(overlayPane);
+
+        // Store the overlay pane in the map for future reference
+        overlayMap.put(button, overlayPane);
+    }
+    private void removeOverlayFromButton(Button button) {
+        StackPane overlayPane = overlayMap.get(button);
+        if (overlayPane != null) {
+            // Remove the overlay pane from the group
+            this.getChildren().remove(overlayPane);
+            // Make the button visible again
+            button.setVisible(true);
+
+            // Remove the entry from the map
+            overlayMap.remove(button);
+        }
+    }
+
+
+
+
 }
+
 

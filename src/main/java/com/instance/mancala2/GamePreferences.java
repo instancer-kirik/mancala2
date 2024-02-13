@@ -8,6 +8,9 @@ public class GamePreferences {
     private PenaltyStrategy penaltyStrategy;
     private boolean stealOpposite;
     private boolean capturePlacedAlso;
+
+
+    private boolean altWoodTexture;
     private boolean continueAfterEmptyHand_AutoPickup;
     // Private constructor to prevent instantiation
     private GamePreferences() {
@@ -16,6 +19,7 @@ public class GamePreferences {
         this.penaltyAmount = PenaltyAmount.HALF;
         this.penaltyStrategy = PenaltyStrategy.DISTRIBUTE_MANY_RANDOM;
         this.continueAfterEmptyHand_AutoPickup = true;
+        this.altWoodTexture = false;
     }
 
     // Public method to get the single instance
@@ -45,5 +49,8 @@ public class GamePreferences {
     public void setCapturePlacedAlso(boolean capturePlacedAlso) {
         this.capturePlacedAlso = capturePlacedAlso;
     }
+    public boolean isAltWoodTexture() {return altWoodTexture;}
+
+    public void setAltWoodTexture(boolean altWoodTexture) {this.altWoodTexture = altWoodTexture;}
 
 }

@@ -1,20 +1,31 @@
-package com.instance.mancala2;
+package com.instance.mancala2.gluonViews;
 
+import com.gluonhq.charm.glisten.mvc.View;
+import com.instance.mancala2.*;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.GridPane;
+import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
-public class PreferencesScreen {
+public class PreferencesView extends View {
     private Stage stage;
     private final GamePreferences preferences;
 
-    public PreferencesScreen(Stage stage) {
-        this.stage = stage;
+    public PreferencesView() {
+        super();
         this.preferences = GamePreferences.getInstance();
+//        // Initialize your layout within the constructor
+//        VBox view = new VBox(10);
+//        view.setAlignment(Pos.CENTER);
+//        view.setStyle("-fx-background-color: black;");
+//        setupMenu(view);
+//        // Set the VBox as the center of this View
+//        this.setCenter(view);
     }
 
     public Parent getView() {

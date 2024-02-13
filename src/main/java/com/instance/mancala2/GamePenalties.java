@@ -9,9 +9,10 @@ public class GamePenalties {
         this.preferences = preferences;
     }
 
-    public void applyPenalty( int blightedPlayer, MancalaBoardGroup mbg) {
+    public void applyPenalty( int blightedPlayer, MancalaBoardGroup mbg, boolean all) {
         PenaltyStrategy strategy = preferences.getPenaltyStrategy();
         PenaltyAmount amount = preferences.getPenaltyAmount();
+        if(all){amount = PenaltyAmount.WHOLE;}
         switch (strategy) {
             case DEDUCT:
                 applyFractionalPenalty(blightedPlayer, amount, mbg);

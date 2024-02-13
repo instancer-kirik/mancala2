@@ -1,5 +1,6 @@
 package com.instance.mancala2;
 
+import com.gluonhq.charm.glisten.application.AppManager;
 import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.stage.Stage;

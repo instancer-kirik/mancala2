@@ -1,22 +1,24 @@
 package com.instance.mancala2;
 
+import com.gluonhq.charm.glisten.application.MobileApplication;
+import com.gluonhq.charm.glisten.control.AppBar;
+import com.gluonhq.charm.glisten.mvc.View;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
-public class EndGameScreen {
-    private VBox view = new VBox(10);
-    private Stage stage;
-    GamePreferences preferences;
-    public EndGameScreen(Stage stage,GamePreferences preferences) {
-        this.preferences=preferences;
-        this.stage = stage;
+public class EndGameScreen extends View {
+    private GamePreferences preferences;
+
+    public EndGameScreen(GamePreferences preferences) {
+        this.preferences = preferences;
         setupEndGameView();
     }
 
     private void setupEndGameView() {
+        VBox view = new VBox(10);
         Button playAgainButton = new Button("Play Again");
         playAgainButton.setOnAction(e -> playAgain());
 
@@ -24,18 +26,23 @@ public class EndGameScreen {
         mainMenuButton.setOnAction(e -> returnToMainMenu());
 
         view.getChildren().addAll(playAgainButton, mainMenuButton);
+        setCenter(view);
     }
 
     private void playAgain() {
-        // Start a new game
+        // Logic to start a new game
+        // This might involve navigating to the game view or resetting the game state
     }
 
     private void returnToMainMenu() {
-        MainMenu menu = new MainMenu(stage);
-        stage.setScene(new Scene(menu.getView(), 800, 600));
+        // Navigate back to the main menu
+        // Assuming "MAIN_MENU" is the ID of your main menu view registered with MobileApplication
+        MobileApplication.getInstance().switchView("MAIN_MENU_VIEW_ID");
     }
 
-    public Parent getView() {
-        return view;
+    @Override
+    protected void updateAppBar(AppBar appBar) {
+        appBar.setTitleText("End Game");
+        // You can add navigation back button or other actions here if needed
     }
 }

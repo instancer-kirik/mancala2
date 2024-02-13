@@ -1,65 +1,33 @@
-package com.instance.mancala2;
+package com.instance.mancala2.gluonViews;
 
-import com.almasb.fxgl.app.GameApplication;
-import com.almasb.fxgl.app.GameSettings;
+
+
+import com.gluonhq.charm.glisten.application.AppManager;
+
+import com.instance.mancala2.*;
 import javafx.application.Platform;
+import javafx.scene.Node;
 import javafx.scene.Scene;
-import javafx.stage.Stage;
 
 import java.util.Stack;
 
-public class MancalaGame extends GameApplication {
-    public int getWidth() {
-        return width;
-    }
-
-    public void setWidth(int width) {
-        this.width = width;
-    }
-
-    public int getHeight() {
-        return height;
-    }
-
-    public void setHeight(int height) {
-        this.height = height;
-    }
+public class MancalaGameComponent {
+    private final Scene scene;
     public boolean isNewTurn = true;
     public boolean wasNewTurn = true;
+
     private int width = 700;
     private int height = 500;
-    private final Scene scene;
-    private final MancalaBoard board; // Existing board class
-
-    MancalaBoardGroup mbg;
-    GamePreferences preferences;
-    GamePenalties gamePenalties;
-    private final int playerCount=2; // Number of players
-
-    public String getEvidence() {
-        return evidence;
-    }
-
-    public void setEvidence(String evidence) {
-        this.evidence = evidence;
-    }
-
+    private MancalaBoard board; // Existing board class
+    private MancalaBoardGroup mbg;
+    public GamePreferences preferences;
+    public GamePenalties gamePenalties;
+    private int playerCount = 2; // Number of players
+    public Player[] players;
+    private Stack<Move> moveStack;
+    private Stack<Move> turnStack;
     private String evidence="";
-    public String getMoveLogs() {
-        StringBuilder logs = new StringBuilder();
-        for (Move move : moveStack) {
-            logs.append(move.toString()).append("\n");
-        }
-        return logs.toString();
-    }
-
-    public String getTurnLog() {
-        StringBuilder logs = new StringBuilder();
-        for (Move move : turnStack) {
-            logs.append(move.toString()).append("\n");
-        }
-        return logs.toString();
-    }
+    private int currentPlayer; // Current player index
     private enum TurnState { PICKING, PLACING }
     private TurnState turnState = TurnState.PICKING;
 
@@ -67,32 +35,21 @@ public class MancalaGame extends GameApplication {
         return currentPlayer;
     }
 
-    public Stage getStage() {
-        return stage;
-    }
+    // Constructor does not need Stage anymore
+    public MancalaGameComponent() {
+        preferences = GamePreferences.getInstance();
 
-    private final Stage stage;
-
-    private int currentPlayer; // Current player index
-    private Stack<Move> moveStack;
-    private Stack<Move> turnStack;//this just keeps the relevant actions on most recent turn
-    public Player[] players;
-    public MancalaGame(Stage stage) {
-        this.stage=stage;
-        preferences  = GamePreferences.getInstance();
-
-        players= new Player[playerCount] ;
-        for(int i=0;i<players.length;i++){
-            //players[i]= new Player("name "+i, this);
+        players = new Player[playerCount];
+        for (int i = 0; i < players.length; i++) {
+            players[i] = new Player("name " + i, this);
         }
 
-        board = new MancalaBoard(14, playerCount,players);
+        board = new MancalaBoard(14, playerCount, players);
         board.setPlayers(players);
 
-        //mbg= new MancalaBoardGroup(board,this);
-        //mbg.game=this;
-        gamePenalties = new GamePenalties(board,preferences);
-//mbp.getScene().getRoot() would probably return null
+        mbg = new MancalaBoardGroup(board, this);
+        mbg.game = this;
+        gamePenalties = new GamePenalties(board, preferences);
         scene = new Scene(mbg, width, height);
 //game.players[game.getCurrentPlayer()].unsleeveStone();
         scene.setOnKeyPressed(event -> {
@@ -101,42 +58,41 @@ public class MancalaGame extends GameApplication {
                 if(players[currentPlayer].getHand()==0){
                     System.out.println("HAND, no stone");
                 }else{
-                // Add a stone to the current player's sleeve
-                players[currentPlayer].storeStone();
+                    // Add a stone to the current player's sleeve
+                    players[currentPlayer].storeStone();
 
-                //this line returns to pickup phase when a player's hand empty
-                if(players[currentPlayer].getHand()==0){resetTurnState();}
+                    //this line returns to pickup phase when a player's hand empty
+                    if(players[currentPlayer].getHand()==0){resetTurnState();}
 
-                mbg.updateUI(); // Update the UI to reflect the change
-            }}
-        if  (event.isControlDown()) {
-                    System.out.println("CONTROL, no click");
-                    if (players[currentPlayer].getSleeveStones() == 0) {
-                        System.out.println("SLEEVE, no stone");
-                        if (players[currentPlayer].getHand() == 0 ) {
-                            resetTurnState();
-                        }
-                    } else {
-                        // Add a stone to the current player's sleeve
-                        players[currentPlayer].unsleeveStone();
+                    mbg.updateUI(); // Update the UI to reflect the change
+                }}
+            if  (event.isControlDown()) {
+                System.out.println("CONTROL, no click");
+                if (players[currentPlayer].getSleeveStones() == 0) {
+                    System.out.println("SLEEVE, no stone");
+                    if (players[currentPlayer].getHand() == 0 ) {
+                        resetTurnState();
                     }
-                        //this line returns to pickup phase when a player's hand empty
-            System.out.println(players[currentPlayer].getHand());
-           mbg.updateUI(); // Update the UI to reflect the change
-        }
+                } else {
+                    // Add a stone to the current player's sleeve
+                    players[currentPlayer].unsleeveStone();
+                }
+                //this line returns to pickup phase when a player's hand empty
+                System.out.println(players[currentPlayer].getHand());
+                mbg.updateUI(); // Update the UI to reflect the change
+            }
         });
-
-
-
-
         moveStack = new Stack<>();
         turnStack = new Stack<>();
 
-
+        // Your initialization logic...
     }
 
+    // Getters, setters, and other methods...
 
-    // Method to add a move to the stack
+    public Node getView() {
+        return mbg; // Return the root node of your game UI
+    }
     public void addMove(ActionType actionType, int pitIndex) {
 
         if (wasNewTurn && (actionType ==ActionType.GRAB_STONES  || actionType ==ActionType.END_TURN) ){
@@ -337,34 +293,24 @@ public class MancalaGame extends GameApplication {
         currentPlayer = (currentPlayer + 1) % playerCount;
         resetTurnState();
     }
-
-
-
-    @Override
-    protected void initSettings(GameSettings gameSettings) {
-
-//        for (int i = 0; i < board.getPitCount(); i++) {
-//            final int pitIndex = i; // Capture i in a final variable
-//            pitNodes[i].setOnMouseClicked(event -> playTurn(pitIndex));
-//        }
-        // Set game title and icon
-//        setTitle();
-//        setIcon("mancala_icon.png"); // Replace with your icon
-
-        // Initialize board state and visual elements
-
-        // ... Create visual representations of pits (Rectangle, Circle, etc.)
-        // ... Add event listeners for pit clicks (using lambda expressions)
-
-        // Initialize current player and display information
-        currentPlayer = 0;
-        // ... Display current player name or indicator on the scene
-       // MancalaBoardPane mbp =new MancalaBoardPane(board);
-      //  scene = new Scene(mbp);
-        //MOVED TO CONSTRUCTOR
-
-
+    public String getMoveLogs() {
+        StringBuilder logs = new StringBuilder();
+        for (Move move : moveStack) {
+            logs.append(move.toString()).append("\n");
+        }
+        return logs.toString();
     }
+
+    public String getTurnLog() {
+        StringBuilder logs = new StringBuilder();
+        for (Move move : turnStack) {
+            logs.append(move.toString()).append("\n");
+        }
+        return logs.toString();
+    }
+
+
+
 
     public Scene getScene() {
         return scene;
@@ -386,8 +332,15 @@ public class MancalaGame extends GameApplication {
             declareWinner();
         }
     }
+    public String getEvidence() {
+        return evidence;
+    }
 
-//
+    public void setEvidence(String evidence) {
+        this.evidence = evidence;
+    }
+
+    //
 //    private void declareWinner() {
 //        // Logic to declare the winner
 //        // This could involve calculating scores and displaying the winner
@@ -412,18 +365,12 @@ public class MancalaGame extends GameApplication {
 //
 //
 //    }
-private void declareWinner() {
-    // Logic to declare the winner...
-    int winner = board.whoHasMorePoints();// Determine the winner...
+    private void declareWinner() {
+        // Logic to declare the winner...
+        int winner = board.whoHasMorePoints();// Determine the winner...
 
-            Platform.runLater(() -> {
-                // Update UI on the JavaFX Application Thread
-               // EndGameScreen endGameScreen = new EndGameScreen(stage,preferences);
-                //Scene endGameScene = new Scene(endGameScreen.getView(), 800, 600);
-                //stage.setScene(endGameScene);
-                stage.show();
-            });
-}
-    // ... Additional methods for menu options, settings, etc.
+        AppManager.getInstance().switchView("MAIN_MENU_VIEW_ID");
 
+    }
+    // Add more methods to control the game, like startGame(), endGame(), etc.
 }

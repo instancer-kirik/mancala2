@@ -1,13 +1,15 @@
 package com.instance.mancala2;
 
+import com.instance.mancala2.gluonViews.MancalaGameComponent;
+
 public class Player {
 
     private int sleeveStones;
     private int hand;
     private int wins;
     private String name;
-    private MancalaGame game;
-    public Player(String name, MancalaGame game){
+    private MancalaGameComponent game;
+    public Player(String name, MancalaGameComponent game){
 
         this.name = name;
         this.game = game;
