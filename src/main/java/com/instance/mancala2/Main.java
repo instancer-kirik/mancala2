@@ -19,6 +19,7 @@ import static com.gluonhq.charm.glisten.application.AppManager.HOME_VIEW;
 public class Main extends Application {
     private final AppManager appManager = AppManager.initialize(this::postInit);
     public static final String END_GAME_VIEW = "END_GAME_VIEW";
+    public static final String MAIN_MENU_VIEW = "MAIN_MENU_VIEW";
     public static final String GAME_VIEW = "GAME_VIEW";
     public static final String PREFERENCES_VIEW = "PREFERENCES_VIEW";
     @Override
@@ -31,7 +32,7 @@ public class Main extends Application {
         });
         appManager.addViewFactory(GAME_VIEW, GameView::new);
         appManager.addViewFactory(PREFERENCES_VIEW, PreferencesView::new);
-
+        appManager.addViewFactory(MAIN_MENU_VIEW, MainMenuView::new);
 
         //() -> {
 

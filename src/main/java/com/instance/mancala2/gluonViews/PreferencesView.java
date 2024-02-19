@@ -1,5 +1,6 @@
 package com.instance.mancala2.gluonViews;
 
+import com.gluonhq.charm.glisten.application.AppManager;
 import com.gluonhq.charm.glisten.mvc.View;
 import com.instance.mancala2.*;
 import javafx.application.Platform;
@@ -17,15 +18,19 @@ public class PreferencesView extends View {
     private final GamePreferences preferences;
 
     public PreferencesView() {
+
         super();
+        System.out.println("HIIII");
         this.preferences = GamePreferences.getInstance();
 //        // Initialize your layout within the constructor
-//        VBox view = new VBox(10);
-//        view.setAlignment(Pos.CENTER);
+        VBox view = new VBox(10);
+        view.setAlignment(Pos.CENTER);
 //        view.setStyle("-fx-background-color: black;");
 //        setupMenu(view);
 //        // Set the VBox as the center of this View
-//        this.setCenter(view);
+
+        view.getChildren().add(getView());
+        this.setCenter(view);
     }
 
     public Parent getView() {
@@ -119,6 +124,7 @@ public class PreferencesView extends View {
         Button saveButton = new Button("Save");
         saveButton.setStyle("-fx-background-color: #556B2F; -fx-text-fill: white;"); // Dark Olive Green button with white text
         saveButton.setOnAction(e -> {
+            System.out.println("SAVED");
             preferences.setCheatPhrase(cheatPhraseComboBox.getValue());
             preferences.setPenaltyAmount(penaltyAmountComboBox.getValue());
             preferences.setPenaltyStrategy(penaltyStrategyComboBox.getValue());
@@ -126,7 +132,7 @@ public class PreferencesView extends View {
             preferences.setStealOpposite(stealOppositeCheckBox.isSelected());
             preferences.setCapturePlacedAlso(capturePlacedAlsoCheckBox.isSelected());
             preferences.setAltWoodTexture(altWoodCheckBox.isSelected());
-            MainMenu.navigateToMainMenu(stage);
+            AppManager.getInstance().switchView("MAIN_MENU_VIEW");
         });
         layout.add(saveButton, 2, 6);
 
