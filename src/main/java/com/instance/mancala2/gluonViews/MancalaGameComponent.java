@@ -6,8 +6,13 @@ import com.gluonhq.charm.glisten.application.AppManager;
 
 import com.instance.mancala2.*;
 import javafx.application.Platform;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.Node;
+import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.layout.*;
+import javafx.scene.paint.Color;
 
 import java.util.Stack;
 
@@ -48,9 +53,20 @@ public class MancalaGameComponent {
         board.setPlayers(players);
 
         mbg = new MancalaBoardGroup(board, this);
+
+        //nope mbg.setStyle("-fx-background-color: grey;");
         mbg.game = this;
+
+
         gamePenalties = new GamePenalties(board, preferences);
+
+        // Ensure mbg can expand to fill its container, if it's not already set to do so
+        StackPane.setAlignment(mbg, Pos.CENTER); // Center mbg within the layeredPane
+        StackPane.setMargin(mbg, new Insets(0)); // Ensure no margin around mbg
+
         scene = new Scene(mbg, width, height);
+
+        //nope scene.getRoot().setStyle("-fx-background-color: grey;"); // Set background color to grey
 //game.players[game.getCurrentPlayer()].unsleeveStone();
         scene.setOnKeyPressed(event -> {
             if (event.isShiftDown()) {
@@ -85,10 +101,27 @@ public class MancalaGameComponent {
         moveStack = new Stack<>();
         turnStack = new Stack<>();
 
-        // Your initialization logic...
+        // Call this method after your scene is set up
+        printNodeTree(mbg, 0);
     }
 
     // Getters, setters, and other methods...
+    private void printNodeTree(Node node, int depth) {
+        StringBuilder indent = new StringBuilder();
+        for (int i = 0; i < depth; i++) {
+            indent.append("  ");
+        }
+        System.out.println(""+indent + node);
+
+        if (node instanceof Parent) {
+            Parent parent = (Parent) node;
+            for (Node child : parent.getChildrenUnmodifiable()) {
+                printNodeTree(child, depth + 1);
+            }
+        }
+    }
+
+
 
     public Node getView() {
         return mbg; // Return the root node of your game UI

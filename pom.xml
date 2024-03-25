@@ -14,12 +14,12 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <junit.version>5.9.2</junit.version>
     <maven.compiler.release>17</maven.compiler.release>
-    <javafx.version>21</javafx.version>
+    <javafx.version>23-ea+3</javafx.version>
     <javafx.plugin.version>0.0.8</javafx.plugin.version>
     <gluonfx.plugin.version>1.0.22</gluonfx.plugin.version>
     <charm.version>6.2.3</charm.version>
-    <attach.version>4.0.19</attach.version>
-    <main.class>com.instance.sample.Main</main.class>
+    <attach.version>4.0.20</attach.version>
+    <main.class>com.instance.mancala2.Main</main.class>
     <gluonfx.target>host</gluonfx.target>
 
   </properties>
@@ -29,18 +29,18 @@
     <dependency>
       <groupId>org.openjfx</groupId>
       <artifactId>javafx-controls</artifactId>
-      <version>17.0.6</version>
+      <version>${javafx.version}</version>
     </dependency>
     <dependency>
       <groupId>org.openjfx</groupId>
       <artifactId>javafx-fxml</artifactId>
-      <version>17.0.6</version>
+      <version>${javafx.version}</version>
     </dependency>
 
     <dependency>
       <groupId>org.openjfx</groupId>
       <artifactId>javafx-media</artifactId>
-      <version>17.0.6</version>
+      <version>${javafx.version}</version>
     </dependency><dependency>
       <groupId>com.github.almasb</groupId>
       <artifactId>fxgl</artifactId>
@@ -93,6 +93,7 @@
       <groupId>com.gluonhq.attach</groupId>
       <artifactId>util</artifactId>
       <version>${attach.version}</version>
+
     </dependency>
 
     <dependency>

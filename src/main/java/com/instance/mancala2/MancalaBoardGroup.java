@@ -3,10 +3,12 @@ package com.instance.mancala2;
 
 import com.instance.mancala2.gluonViews.MancalaGameComponent;
 import javafx.geometry.Bounds;
+import javafx.geometry.Insets;
 import javafx.geometry.Point2D;
 import javafx.geometry.Pos;
 import javafx.scene.Group;
 import javafx.scene.Node;
+import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.effect.DropShadow;
@@ -14,8 +16,7 @@ import javafx.scene.effect.InnerShadow;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseEvent;
-import javafx.scene.layout.StackPane;
-import javafx.scene.layout.VBox;
+import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.paint.CycleMethod;
 import javafx.scene.paint.RadialGradient;
@@ -72,11 +73,21 @@ public class MancalaBoardGroup extends Group {
         this.game = game;
 
         this.mancalas = new Node[game.players.length];
+
+        // Create a large rectangle that will act as the background
+        Rectangle background = new Rectangle(0,0,9000,9000);//(-3000, -3000, 8000, 8000); // Arbitrary large size
+        background.setFill(Color.GREY); // Set to your desired background color
+
+        // Add the background first so it's behind everything els
+        getChildren().add(background);
+        background.toBack();
+        //nope setStyle("-fx-background-color: grey;");
         Image woodImage = new Image(getClass().getResourceAsStream(game.preferences.isAltWoodTexture()?imgPath2:imgPath));
         ImageView woodImageView = new ImageView(woodImage);
 
         woodImageView.setFitWidth(700); // Adjust to your desired width
         woodImageView.setFitHeight(600); // Adjust to your desired height
+        woodImageView.setStyle("-fx-border-color: blue;");
         getChildren().add(woodImageView);
 
         // Create and position Mancalas
@@ -129,7 +140,7 @@ public class MancalaBoardGroup extends Group {
         Button reportCheatingButton = new Button(game.preferences.getCheatPhrase().toString());
         reportCheatingButton.setLayoutX(26); // Adjust based on your layout
         reportCheatingButton.setLayoutY(450); // Adjust based on your layout
-
+        reportCheatingButton.setWrapText(true);
         reportCheatingButton.setOnAction(event -> {
             addOverlayToButton(reportCheatingButton);
             // Accuse player 1, window faces player 1
@@ -157,9 +168,11 @@ public class MancalaBoardGroup extends Group {
 // 'parent' should be replaced with the actual parent container of your button
 
         Button reportCheatingButton2 = new Button(game.preferences.getCheatPhrase().toString());
-        reportCheatingButton2.setLayoutX(610); // Adjust based on your layout
-        reportCheatingButton2.setLayoutY(50); // Adjust based on your layout
         reportCheatingButton2.setRotate(180);
+        reportCheatingButton2.setLayoutX(450); // Adjust based on your layout
+        reportCheatingButton2.setLayoutY(50); // Adjust based on your layout
+        //so the button draws from the leftmost corner
+        reportCheatingButton2.setWrapText(true);
         reportCheatingButton2.setOnAction(event -> {
             addOverlayToButton(reportCheatingButton2);
             game.addMove(ActionType.ACCUSE, -1, 0);
@@ -207,6 +220,14 @@ public class MancalaBoardGroup extends Group {
         updateStoneCounts();
         updateCurrentPlayerIndicator();
         updateUI();
+
+//      BackgroundFill backgroundFill = new BackgroundFill(Color.HOTPINK, CornerRadii.EMPTY, Insets.EMPTY);
+//        Background background = new Background(backgroundFill);
+//        BorderStroke borderStroke = new BorderStroke(Color.RED, BorderStrokeStyle.SOLID, CornerRadii.EMPTY, new BorderWidths(2));
+//        Border border = new Border(borderStroke);
+        this.setStyle("-fx-background-color: #6E6E6E;");
+        //layeredPane.setBorder(border);
+        //this.getScene().setRoot(layeredPane);
     }
 
     public Node getNodeForPit(int pitIndex) {

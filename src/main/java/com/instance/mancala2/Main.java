@@ -10,9 +10,19 @@ import com.instance.mancala2.gluonViews.MainMenuView;
 import com.instance.mancala2.gluonViews.PreferencesView;
 import javafx.application.Application;
 import javafx.geometry.Dimension2D;
+import javafx.scene.Node;
+import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
 import javafx.scene.image.Image;
+import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
+import javafx.stage.Window;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import static com.gluonhq.charm.glisten.application.AppManager.HOME_VIEW;
 
@@ -75,15 +85,32 @@ public class Main extends Application {
 //        primaryStage.show();
 //    }
 
+
+
+    // Implement your logic to decide whether a window should be closed
+
     @Override
     public void start(Stage stage) {
-        appManager.start(stage);
+        try {
+
+            appManager.start(stage);
+
+            clickCloseButtonOnPopup();
+
+        } catch (Exception e) {
+            // Catch other exceptions. It's a good practice to catch specific exceptions if possible.
+            System.err.println("Unexpected exception encountered during appManager.start: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 
     private void postInit(Scene scene) {
         Swatch.LIGHT_GREEN.assignTo(scene);
+//        Swatch.
+
         scene.getStylesheets().add(Main.class.getResource("styles.css").toExternalForm());
-        ((Stage) scene.getWindow()).getIcons().add(new Image(Main.class.getResourceAsStream("/icon.png")));
+
+        ((Stage) scene.getWindow()).getIcons().add(new Image(Main.class.getResourceAsStream("/images/icon.png")));
 
         if (Platform.isDesktop()) {
             Dimension2D dimension2D = DisplayService.create()
@@ -92,8 +119,48 @@ public class Main extends Application {
             scene.getWindow().setWidth(dimension2D.getWidth());
             scene.getWindow().setHeight(dimension2D.getHeight());
         }
+        Parent root = (Parent) scene.getRoot();
+        root.setStyle("-fx-background-color: grey;"); // Set background color to grey
     }
 
+
+    private void clickCloseButtonOnPopup() {
+        javafx.application.Platform.runLater(() -> {
+            for (Window window : Window.getWindows()) {
+                if (window instanceof Stage) {
+                    Stage stage = (Stage) window;
+                    Scene scene = stage.getScene();
+                    if (scene != null && scene.getRoot() != null) {
+                        // Search for the button within this window's scene graph
+                        List<Button> buttons = findNodesByType(scene.getRoot(), Button.class);
+                        for (Button button : buttons) {
+
+                            if ("CLOSE".equals(button.getText())) {
+                                // Simulate a button click
+                                button.fire();
+                                //javafx.application.Platform.runLater(button::fire);
+
+                                return; // Stop after clicking the first matching button
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    private <T extends Node> List<T> findNodesByType(Node root, Class<T> type) {
+        List<T> nodes = new ArrayList<>();
+        if (type.isInstance(root)) {
+            nodes.add(type.cast(root));
+        }
+        if (root instanceof Parent) {
+            for (Node child : ((Parent) root).getChildrenUnmodifiable()) {
+                nodes.addAll(findNodesByType(child, type));
+            }
+        }
+        return nodes;
+    }
     public static void main(String[] args) {
         launch(args);
     }
